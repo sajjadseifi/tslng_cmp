@@ -1,5 +1,8 @@
-import { IToken } from '.'
+import { IPosition } from '.'
 
 export interface ILex {
-  next_token(): IToken
+  src: string
+  current_pos: IPosition
+  get_char(): string
+  un_get_char(): string
 }
