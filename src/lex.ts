@@ -25,6 +25,7 @@ export class Lex implements ILex {
 
     this.index++
     this.update_ch()
+    this.tmp += this.ch
   }
 
   un_get_char(): void {
@@ -34,10 +35,12 @@ export class Lex implements ILex {
     }
     this.index--
     this.update_ch()
+    if (this.tmp.length > 0) this.tmp = this.tmp.substr(0, this.tmp.length - 1)
   }
 
   clear_chars(): void {
     this.ch = ''
+    this.tmp = ''
   }
   get eof(): boolean {
     return this.index >= this.length
