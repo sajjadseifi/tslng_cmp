@@ -1,3 +1,4 @@
+import { patterns } from './constants'
 import { Position } from './pos'
 import { ILex, IPosition } from './types'
 
@@ -28,6 +29,9 @@ export class Lex implements ILex {
     this.tmp += this.ch
   }
 
+  get is_new_line(): boolean {
+    return patterns.NEW_LINE.test(this.ch)
+  }
   un_get_char(): void {
     if (this.index < 1) {
       this.index = -1
