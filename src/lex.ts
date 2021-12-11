@@ -5,7 +5,7 @@ export class Lex implements ILex {
   ch = ''
   length = 0
   pos: IPosition
-  index = 0
+  index = -1
 
   constructor(public src: string) {
     this.length = src.length
@@ -15,11 +15,20 @@ export class Lex implements ILex {
     this.ch = this.src[this.index]
   }
   get_char(): void {
+    if (this.index >= this.length - 1) {
+      this.index = this.length
+      return this.clear_chars()
+    }
+
     this.index++
     this.update_ch()
   }
 
   un_get_char(): void {
+    if (this.index < 1) {
+      this.index = -1
+      return this.clear_chars()
+    }
     this.index--
     this.update_ch()
   }
@@ -27,7 +36,7 @@ export class Lex implements ILex {
   clear_chars(): void {
     this.ch = ''
   }
-  get eof() {
+  get eof(): boolean {
     return this.index >= this.length
   }
 }
