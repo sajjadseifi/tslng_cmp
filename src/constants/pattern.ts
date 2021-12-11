@@ -9,6 +9,7 @@ export const NUMERIC = /^[0-9][0-9]*$/
 export const NON_ZERO = /^[1-9][0-9]*$/
 
 export const WHITE_SPACE = /^(\n|\s|\0|\r|\f)$/
+export const NEW_LINE = /^\n$/
 
 export const SPECIAL_CHAR = /[^A-Za-z0-9]/
 
