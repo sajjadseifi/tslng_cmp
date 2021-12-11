@@ -1,0 +1,6 @@
+export const FUNCTION = 'function'
+export const IF = 'if'
+export const VAL = 'val'
+export const RETURNS = 'returns'
+export const RETURN = 'return'
+export const END = 'end'
