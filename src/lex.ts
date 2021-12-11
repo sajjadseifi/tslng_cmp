@@ -2,14 +2,17 @@ import { Position } from './pos'
 import { ILex, IPosition } from './types'
 
 export class Lex implements ILex {
-  ch = ''
-  length = 0
+  ch: string
+  length: number
   pos: IPosition
-  index = -1
-
+  index: number
+  tmp: string
   constructor(public src: string) {
     this.length = src.length
+    this.ch = ''
+    this.index = -1
     this.pos = new Position(0, 0)
+    this.tmp = ''
   }
   private update_ch() {
     this.ch = this.src[this.index]
