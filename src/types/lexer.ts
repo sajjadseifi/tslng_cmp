@@ -6,8 +6,8 @@ export interface ILex {
   src: string
   chars: string
   current_pos: IPosition
-  get_char(): string
-  un_get_char(): string
+  get_char(): void
+  un_get_char(): void
   clear_chars(): void
 }
 
