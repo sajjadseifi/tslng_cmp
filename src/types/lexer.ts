@@ -19,6 +19,9 @@ export interface ILexerAtomata {
   real(): IToken
   iden(): IToken
   keyword(): IToken
+  spec1(): IToken
+  spec2(c1: string): IToken
+  spec3(c2: string): IToken
   error5(): LexerError
   error13(): LexerError
 }
