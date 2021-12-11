@@ -8,10 +8,10 @@ import { Token } from './token'
 import { LexicalError } from './error'
 export class Lexer implements ILexer, ILexerAtomata {
   lex: ILex
-  // tmp: string
+  finished: boolean
   constructor(public src: string) {
     this.lex = new Lex(src)
-    // this.lex.tmp = ''
+    this.finished = false
   }
   skip_white_space() {
     //at first char
@@ -38,8 +38,9 @@ export class Lexer implements ILexer, ILexerAtomata {
 
     let tok_type: TokenTypeError
 
+    if (this.lex.eof) return new Token(this.eof(), undefined, this.lex.pos)
     //get identifier
-    if (patterns.APHABETIC.test(this.lex.tmp)) tok_type = this.iden()
+    else if (patterns.APHABETIC.test(this.lex.tmp)) tok_type = this.iden()
     //get number
     else if (patterns.NUMERIC.test(this.lex.tmp)) tok_type = this.num()
     //get special char
@@ -49,12 +50,11 @@ export class Lexer implements ILexer, ILexerAtomata {
       //spec not additional use get_char then use this statement to solve issue
       this.lex.get_char()
     }
-
     //not founded tokens
-    tok_type = this.error13()
+    else tok_type = this.error13()
 
     //Lexer Error
-    if (typeof tok_type !== 'number') {
+    if (tok_type instanceof LexicalError) {
       tok_type.pos = this.lex.pos
       return tok_type
     }
@@ -63,12 +63,22 @@ export class Lexer implements ILexer, ILexerAtomata {
     //if token is comment recursive initing token
     if (this.lex.tmp == '--') return this.init()
     //Itoken
-    return new Token(tok_type, this.lex.tmp, this.lex.pos)
+    return new Token(tok_type as TokenType, this.lex.tmp, this.lex.pos)
+  }
+  eof(): TokenType {
+    this.finished = true
+    return TokenType.EOF
   }
   comment_line(): void {
+    //checker new line with ch lex
+
     this.lex.get_char()
-    while (patterns.NEW_LINE.test(this.lex.ch)) this.lex.get_char()
-    this.lex.get_char()
+    //chek infinit time to find \n char
+    while (!this.lex.is_new_line) this.lex.get_char()
+    //to back last char
+    this.lex.un_get_char()
+    //clear tmp and ch var
+    this.lex.clear_chars()
   }
   comment_star(): void {
     throw new Error('Method not implemented.')
