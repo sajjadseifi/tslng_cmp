@@ -8,6 +8,7 @@ export class Lex implements ILex {
   index = 0
 
   constructor(public src: string) {
+    this.length = src.length
     this.pos = new Position(0, 0)
   }
   private update_ch() {
@@ -25,5 +26,8 @@ export class Lex implements ILex {
 
   clear_chars(): void {
     this.ch = ''
+  }
+  get eof() {
+    return this.index >= this.length
   }
 }
