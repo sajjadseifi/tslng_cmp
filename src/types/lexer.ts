@@ -1,13 +1,13 @@
-import { IToken } from '.'
-import { LexerError } from './error'
+import { IToken, LenOne, LenTow } from '.'
+import { TokenError } from './type'
 
 export interface ILexer {
-  prev_token(): IToken | never
-  next_token(): IToken | never
+  prev_token(): TokenError
+  next_token(): TokenError
 }
 
 export interface ILexerAtomata {
-  init(): IToken | LexerError
+  init(): TokenError
   comment_line(): IToken
   comment_star(): IToken
   num(): IToken
@@ -15,8 +15,8 @@ export interface ILexerAtomata {
   iden(): IToken
   keyword(): IToken
   spec1(): IToken
-  spec2(): IToken
-  spec3(): IToken
-  error5(): LexerError
-  error13(): LexerError
+  spec2(c1: LenOne): IToken
+  spec3(c2: LenTow): IToken
+  error5(): TokenError
+  error13(): TokenError
 }
