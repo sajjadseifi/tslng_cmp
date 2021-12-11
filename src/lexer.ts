@@ -4,12 +4,14 @@ import { ILexer, ILexerAtomata } from './types/lexer'
 import { TokenError, TokenTypeError } from './types/type'
 import { keywords, patterns } from './constants'
 import { WHITE_SPACE } from './constants/pattern'
+import { Token } from './token'
+import { LexicalError } from './error'
 export class Lexer implements ILexer, ILexerAtomata {
   lex: ILex
-  tmp: string
+  // tmp: string
   constructor(public src: string) {
     this.lex = new Lex(src)
-    this.tmp = ''
+    // this.lex.tmp = ''
   }
   skip_white_space() {
     //at first char
@@ -29,37 +31,39 @@ export class Lexer implements ILexer, ILexerAtomata {
     return this.init()
   }
   init(): TokenError {
+    //cleraing tmp varaible of lexer
+    this.lex.clear_chars()
+    //
     this.lex.get_char()
-    this.tmp = this.lex.ch
+
     let tok_type: TokenTypeError
 
     //get identifier
-    if (patterns.APHABETIC.test(this.tmp)) tok_type = this.iden()
-    //get real number
-    else if (patterns.POINT.test(this.tmp)) tok_type = this.error5()
+    if (patterns.APHABETIC.test(this.lex.tmp)) tok_type = this.iden()
     //get number
-    else if (patterns.NUMERIC.test(this.tmp)) tok_type = this.num()
+    else if (patterns.NUMERIC.test(this.lex.tmp)) tok_type = this.num()
     //get special char
-    else if (patterns.SPECIAL_CHAR.test(this.tmp)) tok_type = this.spec1()
+    else if (patterns.SPECIAL_CHAR.test(this.lex.tmp)) {
+      tok_type = this.spec1()
+      //because the bottom of this function use un_get_char to solve addition get_char
+      //spec not additional use get_char then use this statement to solve issue
+      this.lex.get_char()
+    }
 
     //not founded tokens
     tok_type = this.error13()
 
     //Lexer Error
-    if (typeof tok_type !== 'number')
-      return {
-        ...tok_type,
-        pos: this.lex.pos
-      }
+    if (typeof tok_type !== 'number') {
+      tok_type.pos = this.lex.pos
+      return tok_type
+    }
 
     this.lex.un_get_char()
-    if (this.tmp == '--') return this.init()
+    //if token is comment recursive initing token
+    if (this.lex.tmp == '--') return this.init()
     //Itoken
-    return {
-      type: tok_type,
-      val: this.tmp,
-      pos: this.lex.pos
-    }
+    return new Token(tok_type, this.lex.tmp, this.lex.pos)
   }
   comment_line(): void {
     this.lex.get_char()
@@ -71,7 +75,6 @@ export class Lexer implements ILexer, ILexerAtomata {
   }
   num(): TokenType {
     this.lex.get_char()
-    this.tmp += this.lex.ch
     //get number
     if (patterns.NUMERIC.test(this.lex.ch)) return this.num()
     //get real number
@@ -96,53 +99,84 @@ export class Lexer implements ILexer, ILexerAtomata {
     return TokenType.TOKEN_IDENTIFIER
   }
   is_keyword(): boolean {
-    return keywords.list.some((k) => k === this.tmp)
+    return keywords.list.some((k) => k === this.lex.tmp)
   }
   spec1(): TokenType {
-    const s2 = this.spec2(this.tmp)
     //add for un-get-char in init
-    this.lex.get_char()
+    const c = this.lex.ch
+    //cant 2 cahrs token
+    if (
+      c == '(' ||
+      c == ')' ||
+      c == '{' ||
+      c == '}' ||
+      c == '[' ||
+      c == ']' ||
+      c == '/' ||
+      c == '"' ||
+      c == "'"
+    )
+      return TokenType.TOKEN_SPEC1
+    //can 2 chars token
+    if (
+      c == '=' ||
+      c == '>' ||
+      c == '<' ||
+      c == '!' ||
+      c == '&' ||
+      c == '|' ||
+      c == '+' ||
+      c == '-' ||
+      c == '*'
+    )
+      return this.spec2()
 
-    if (s2 !== false) return s2
+    // //get real number
+    // else if (patterns.POINT.test(this.lex.tmp)) tok_type = this.error5()
 
-    return TokenType.TOKEN_SPEC1
+    return TokenType.TOKEN_OTHERS
   }
-  spec2(c1: string): TokenType | false {
+  spec2(): TokenType {
     this.lex.get_char()
-    const str = c1 + this.lex.ch
-    if (str == '--') {
+    const c2 = this.lex.tmp
+    //if comment token return spec token and skip this line
+    if (c2 == '--') {
       this.comment_line()
       return TokenType.TOKEN_SPEC2
     }
+    //can not be 3 chars
+    if (
+      c2 == '<=' ||
+      c2 == '>=' ||
+      c2 == '++' ||
+      c2 == '--' ||
+      c2 == '**' ||
+      c2 == '||' ||
+      c2 == '&&'
+    )
+      return TokenType.TOKEN_SPEC2
 
-    const s3 = this.spec3(str)
+    //can be 3 chars
+    if (c2 == '==' || c2 == '!=') return this.spec3()
 
-    if (s3 !== false) return s3
-
-    //2 size tok
-    if (str == '==') return TokenType.TOKEN_SPEC2
-    //un get char to corrent position of spec1
     this.lex.un_get_char()
 
-    return false
+    return TokenType.TOKEN_SPEC1
   }
-  spec3(c2: string): TokenType | false {
+  spec3(): TokenType {
     this.lex.get_char()
+    const c3 = this.lex.tmp
     //3 size tok
-    if (this.tmp == '===') return TokenType.TOKEN_SPEC3
+    if (c3 == '===' || c3 == '!==') return TokenType.TOKEN_SPEC3
 
     //un get char to corrent position of spec2
     this.lex.un_get_char()
-    return false
+    return TokenType.TOKEN_SPEC2
   }
   error5(): TokenTypeError {
-    return {
-      message: 'error 5 state machin'
-    }
+    return new LexicalError('error 5 state machin')
   }
   error13(): TokenTypeError {
-    return {
-      message: 'error 13 state machin'
-    }
+    return new LexicalError('error 3 state machin')
   }
 }
