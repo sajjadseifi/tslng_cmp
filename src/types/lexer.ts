@@ -2,6 +2,7 @@ import { IToken, LenOne, LenTow, TokenType, TokenTypeError } from '.'
 import { TokenError } from './type'
 
 export interface ILexer {
+  finished: boolean
   prev_token(): TokenError
   next_token(): TokenError
 }
