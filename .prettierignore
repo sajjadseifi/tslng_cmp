@@ -1,0 +1,9 @@
+/.yarn
+/node_modules
+/public
+/build
+*.svg
+# evrything in root
+# /*.*
+# !webpack.dev.config.ts
+# !webpack.prod.config.ts

@@ -1,0 +1,43 @@
+{
+  "name": "personal-website",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "start": "ts-node src/index.ts",
+    "build": "tsc src/index.ts",
+    "lint": "eslint . --no-ignore",
+    "lint:fix": "eslint . --no-ignore  --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "prepare": "husky install"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^4.28.5",
+    "@typescript-eslint/parser": "^4.28.5",
+    "eslint": "^7.32.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-prettier": "^3.4.0",
+    "eslint-plugin-shopify": "^35.1.0",
+    "eslint-webpack-plugin": "^3.0.1",
+    "husky": "^7.0.4",
+    "prettier": "^2.5.1",
+    "shopify": "^0.1.0",
+    "ts-node": "^10.4.0",
+    "typescript": "^4.4.0"
+  },
+  "eslintConfig": {
+    "extends": []
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}

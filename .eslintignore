@@ -1,0 +1,8 @@
+dist
+build
+node_modules/
+/.yarn
+/public
+*.*
+!webpack.dev.config.ts
+!webpack.prod.config.ts
