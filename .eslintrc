@@ -9,14 +9,13 @@
   "extends": [
     "eslint:recommended",
     "plugin:@typescript-eslint/recommended",
-    "plugin:shopify/esnext",
     "plugin:@typescript-eslint/eslint-recommended",
     "prettier"
   ],
   "rules": {
     "no-console": "warn",
     "@typescript-eslint/no-unused-vars": ["warn", { "args": "after-used" }],
-    "no-unused-vars": ["warn", { "args": "after-used" }], //
+    "no-unused-vars": ["warn", { "args": "after-used" }],
     "prettier/prettier": ["error", {}, { "usePrettierrc": true }],
     "@typescript-eslint/no-explicit-module-boundary-types": "off"
   }
