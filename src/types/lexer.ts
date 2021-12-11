@@ -1,6 +1,6 @@
 import { IToken } from '.'
-
 import { IPosition } from '.'
+import { LexerError } from './error'
 
 export interface ILex {
   src: string
@@ -15,4 +15,10 @@ export interface ILexer {
 
 export interface ILexerAtomata {
   init(): void
+  num(): IToken
+  real(): IToken
+  iden(): IToken
+  keyword(): IToken
+  error5(): LexerError
+  error13(): LexerError
 }
