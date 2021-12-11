@@ -1,15 +1,5 @@
 import { IToken } from '.'
-import { IPosition } from '.'
 import { LexerError } from './error'
-
-export interface ILex {
-  src: string
-  chars: string
-  current_pos: IPosition
-  get_char(): void
-  un_get_char(): void
-  clear_chars(): void
-}
 
 export interface ILexer {
   prev_token(): IToken | never
@@ -18,6 +8,8 @@ export interface ILexer {
 
 export interface ILexerAtomata {
   init(): IToken | LexerError
+  comment_line(): IToken
+  comment_star(): IToken
   num(): IToken
   real(): IToken
   iden(): IToken
