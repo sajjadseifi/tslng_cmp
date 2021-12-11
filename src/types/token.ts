@@ -5,5 +5,5 @@ import { IPosition, TokenType } from '.'
 export interface IToken {
   type: TokenType
   pos?: IPosition
-  val: Value
+  val?: Value
 }
