@@ -2,6 +2,8 @@ export const APHABETIC = /^[a-zA-Z]$/
 
 export const IDENTIFIER = /^[a-zA-z_][a-zA-z_0-9]*$/
 
+export const APHA_NUMERIC_UNDE = /^[a-zA-z_0-9]$/
+
 export const NUMERIC = /^[0-9][0-9]*$/
 
 export const NON_ZERO = /^[1-9][0-9]*$/
