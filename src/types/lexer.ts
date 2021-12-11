@@ -1,4 +1,4 @@
-import { IToken, LenOne, LenTow } from '.'
+import { IToken, LenOne, LenTow, TokenType, TokenTypeError } from '.'
 import { TokenError } from './type'
 
 export interface ILexer {
@@ -8,15 +8,15 @@ export interface ILexer {
 
 export interface ILexerAtomata {
   init(): TokenError
-  comment_line(): IToken
-  comment_star(): IToken
-  num(): IToken
-  real(): IToken
-  iden(): IToken
-  keyword(): IToken
-  spec1(): IToken
-  spec2(c1: LenOne): IToken
-  spec3(c2: LenTow): IToken
-  error5(): TokenError
-  error13(): TokenError
+  comment_line(): void
+  comment_star(): void
+  num(): TokenType
+  real(): TokenType
+  iden(): TokenType
+  is_keyword(): boolean
+  spec1(): TokenType
+  spec2(): TokenType | false
+  spec3(): TokenType | false
+  error5(): TokenTypeError
+  error13(): TokenTypeError
 }
