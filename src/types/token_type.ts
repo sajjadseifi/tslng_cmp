@@ -6,5 +6,6 @@ export enum TokenType {
   TOKEN_SPEC1,
   TOKEN_SPEC2,
   TOKEN_SPEC3,
-  TOKEN_OTHERS
+  TOKEN_OTHERS,
+  EOF
 }
