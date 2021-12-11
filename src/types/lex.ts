@@ -10,4 +10,5 @@ export interface ILex {
   un_get_char(): void
   clear_chars(): void
   get eof(): boolean
+  get is_new_line(): boolean
 }
