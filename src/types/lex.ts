@@ -8,4 +8,5 @@ export interface ILex {
   get_char(): void
   un_get_char(): void
   clear_chars(): void
+  get eof(): boolean
 }
