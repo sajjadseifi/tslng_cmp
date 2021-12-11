@@ -4,6 +4,6 @@ export interface Error {
   message: string
 }
 
-export interface LexerError {
-  pos: IPosition
+export interface LexerError extends Error {
+  pos?: IPosition
 }
