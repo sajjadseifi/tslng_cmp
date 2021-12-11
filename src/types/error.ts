@@ -4,6 +4,6 @@ export interface Error {
   message: string
 }
 
-export interface LexerError extends Error {
+export interface ILexerError extends Error {
   pos?: IPosition
 }
