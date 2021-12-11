@@ -15,8 +15,8 @@ export interface ILexerAtomata {
   iden(): TokenType
   is_keyword(): boolean
   spec1(): TokenType
-  spec2(c1: string): TokenType | false
-  spec3(c2: string): TokenType | false
+  spec2(): TokenType
+  spec3(): TokenType
   error5(): TokenTypeError
   error13(): TokenTypeError
 }
