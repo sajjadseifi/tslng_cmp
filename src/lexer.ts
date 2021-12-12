@@ -17,21 +17,12 @@ export class Lexer implements ILexer, ILexerAtomata {
     // console.log('this.lex.ch', this.lex.ch)
     return this.lex.ch!
   }
-  skip_white_space() {
-    //at first char
-    this.lex.get_char()
 
-    //check if white space loop infinit
-    while (WHITE_SPACE.test(this.ch)) this.lex.get_char()
-
-    //while end ch dosnt white space
-    this.lex.un_get_char()
-  }
   prev_token(): TokenError {
     throw new Error('Method not implemented.')
   }
   next_token(): TokenError {
-    this.skip_white_space()
+    this.lex.skip_white_space()
     return this.init()
   }
   init(): TokenError {
@@ -73,8 +64,6 @@ export class Lexer implements ILexer, ILexerAtomata {
     return TokenType.EOF
   }
   comment_line(): void {
-    //checker new line with ch lex
-
     this.lex.get_char()
     //chek infinit time to find \n char
     while (!this.lex.is_new_line) this.lex.get_char()
@@ -130,6 +119,14 @@ export class Lexer implements ILexer, ILexerAtomata {
       c == "'"
     )
       return TokenType.TOKEN_SPEC1
+    //if c == . can be real number
+    if (c == '.') {
+      this.lex.get_char()
+
+      if (patterns.NUMERIC.test(this.lex.ch!)) return this.real()
+
+      this.lex.un_get_char()
+    }
     //can 2 chars token
     if (
       c == '=' ||
@@ -140,6 +137,7 @@ export class Lexer implements ILexer, ILexerAtomata {
       c == '|' ||
       c == '+' ||
       c == '-' ||
+      c == '.' ||
       c == '*'
     )
       return this.spec2()
