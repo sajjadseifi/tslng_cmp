@@ -1,7 +1,7 @@
 import { IPosition } from '.'
 
 export interface ILex {
-  ch?: string
+  ch: string
   length: number
   pos: IPosition
   tmp: string
