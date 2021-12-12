@@ -1,5 +1,5 @@
 import { Lex } from './lex'
-import { ILex, TokenType } from './types'
+import { ILex, IToken, TokenType } from './types'
 import { ILexer, ILexerAtomata } from './types/lexer'
 import { TokenError, TokenTypeError } from './types/type'
 import { keywords, patterns } from './constants'
@@ -32,7 +32,7 @@ export class Lexer implements ILexer, ILexerAtomata {
     this.lex.get_char()
 
     let tok_type: TokenTypeError
-    if (this.lex.eof) return new Token(this.eof(), undefined, this.lex.pos)
+    if (this.lex.eof) return this.eof()
     //get identifier
     else if (patterns.APHABETIC.test(this.lex.tmp)) tok_type = this.iden()
     //get number
@@ -61,9 +61,9 @@ export class Lexer implements ILexer, ILexerAtomata {
     //Itoken
     return new Token(tok_type as TokenType, this.lex.tmp, this.lex.pos)
   }
-  eof(): TokenType {
+  eof(): IToken {
     this.finished = true
-    return TokenType.EOF
+    return new Token(TokenType.EOF, undefined, this.lex.pos)
   }
   comment_line(): void {
     this.lex.get_char(false)
