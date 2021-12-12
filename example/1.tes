@@ -2,7 +2,13 @@
     function sajjad() returns Int:
       --is now comment comments
       val sajjad : Int = 10;
+    /* 
+    
+     sajjad seifi 
+     sd asdad asdad
 
+     dasd asdas
+    */
 
       val f1 : Float = .010;
       
