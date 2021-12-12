@@ -12,6 +12,76 @@ export class Lexer implements ILexer, ILexerAtomata {
     this.lex = new Lex(fd)
     this.finished = false
   }
+  skiper_signle_char(): void {
+    while (
+      //skip all to find single qoute
+      patterns.SINGLE_QOUTE.test(this.ch) == false &&
+      //skip all if ch present new line
+      patterns.NEW_LINE.test(this.ch) == false
+    ) {
+      this.lex.get_char()
+    }
+  }
+  str_single_cahr(): TokenTypeError {
+    this.lex.get_char()
+
+    if (patterns.SINGLE_QOUTE.test(this.ch)) {
+      return new LexicalError('char can not be empty')
+    }
+    //if special char must be move to next cahr
+    if (patterns.BACK_SLASH.test(this.ch)) {
+      //skip char after back slash token
+      this.lex.get_char()
+    }
+    //get char afeter '. or '\.
+    this.lex.get_char()
+
+    if (patterns.SINGLE_QOUTE.test(this.ch))
+      return TokenType.TOKEN_STR_SINGLE_CHAR
+
+    //find signle qout in the current line or nut skiping
+    this.skiper_signle_char()
+
+    return new LexicalError('this token is string , char length must be one')
+  }
+
+  str_linear(): TokenTypeError {
+    this.lex.get_char()
+    //if new char is not equal to (")
+    if (patterns.DOUBLE_QOUTE.test(this.ch) == false) {
+      //if bad char is a \n
+      if (patterns.NEW_LINE.test(this.ch))
+        return new LexicalError('string with qouteation cant be new line')
+      else return this.str_linear()
+    }
+    //return if ch equal to "
+    return TokenType.TOKEN_STR_LINEAE_CHARS
+  }
+
+  str_big_string(): TokenTypeError {
+    this.lex.get_char()
+
+    if (!patterns.BACKTICK.test(this.ch) && !this.lex.eof) this.str_big_string()
+
+    if (this.lex.eof)
+      return new LexicalError(
+        'you are must be close <`> back tik to solved problem'
+      )
+
+    return TokenType.TOKEN_STR_BIG_CHARS
+  }
+
+  str(): TokenTypeError | null {
+    switch (this.ch) {
+      case '"':
+        return this.str_linear()
+      case '`':
+        return this.str_big_string()
+      case "'":
+        return this.str_single_cahr()
+    }
+    return null
+  }
   get ch(): string {
     // console.log('this.lex.ch', this.lex.ch)
     return this.lex.ch!
@@ -129,20 +199,16 @@ export class Lexer implements ILexer, ILexerAtomata {
 
     return keywords.list.some((k) => k === val)
   }
-  spec1(): TokenType {
+  spec1(): TokenTypeError {
     //add for un-get-char in init
     const c = this.lex.ch
+    //if token is string return one of three type STR
+    let str_tok = null
+    if ((str_tok = this.str())) {
+      return str_tok
+    }
     //cant 2 cahrs token
-    if (
-      c == '(' ||
-      c == ')' ||
-      c == '{' ||
-      c == '}' ||
-      c == '[' ||
-      c == ']' ||
-      c == '"' ||
-      c == "'"
-    )
+    if (c == '(' || c == ')' || c == '{' || c == '}' || c == '[' || c == ']')
       return TokenType.TOKEN_SPEC1
     //if c == . can be real number
     if (c == '.') {
