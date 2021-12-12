@@ -1,27 +1,23 @@
+import { LexicalError } from './error'
 import { Lex } from './lex'
 import { Lexer } from './lexer'
 import { Token } from './token'
 import { TokenError, TokenType } from './types'
 import { ILexer } from './types/lexer'
-
+import fs from 'fs'
 const main = () => {
   console.log('start main')
 
-  const lex: ILexer = new Lexer(`
-  
-    function sajjad() returns Int:
-      --is now comment comments
-      val sajjad : Int = 10;
-      if(sajjad == 10)
-        sajjad = 50;
-    end
-  `)
-  let tok: TokenError
+  fs.open('./example/1.tes', 'r', (err, fd) => {
+    if (err) throw err
 
-  while (!lex.finished) {
-    const tok: TokenError = lex.next_token()
-    console.log(tok)
-  }
+    const lex: ILexer = new Lexer(fd)
+    while (!lex.finished) {
+      const tok: TokenError = lex.next_token()
+      console.log(tok)
+    }
+  })
+
   console.log('end main')
 }
 
