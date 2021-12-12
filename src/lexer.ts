@@ -1,9 +1,8 @@
 import { Lex } from './lex'
-import { ILex, IToken, TokenType } from './types'
+import { ILex, TokenType } from './types'
 import { ILexer, ILexerAtomata } from './types/lexer'
 import { TokenError, TokenTypeError } from './types/type'
 import { keywords, patterns } from './constants'
-import { WHITE_SPACE } from './constants/pattern'
 import { Token } from './token'
 import { LexicalError } from './error'
 export class Lexer implements ILexer, ILexerAtomata {
@@ -22,13 +21,14 @@ export class Lexer implements ILexer, ILexerAtomata {
     throw new Error('Method not implemented.')
   }
   next_token(): TokenError {
-    this.lex.skip_white_space()
     return this.init()
   }
   init(): TokenError {
     //cleraing tmp varaible of lexer
     this.lex.clear_chars()
-    //
+    //skip all white space
+    this.lex.skip_white_space()
+    //get first new char in file
     this.lex.get_char()
 
     let tok_type: TokenTypeError
@@ -55,7 +55,9 @@ export class Lexer implements ILexer, ILexerAtomata {
 
     this.lex.un_get_char()
     //if token is comment recursive initing token
-    if (this.lex.tmp == '--') return this.init()
+    if (this.lex.tmp == '--' || this.lex.tmp == '/*') {
+      return this.init()
+    }
     //Itoken
     return new Token(tok_type as TokenType, this.lex.tmp, this.lex.pos)
   }
@@ -64,16 +66,34 @@ export class Lexer implements ILexer, ILexerAtomata {
     return TokenType.EOF
   }
   comment_line(): void {
-    this.lex.get_char()
+    this.lex.get_char(false)
     //chek infinit time to find \n char
-    while (!this.lex.is_new_line) this.lex.get_char()
+    while (!this.lex.is_new_line) this.lex.get_char(false)
     //to back last char
-    this.lex.un_get_char()
-    //clear tmp and ch var
-    this.lex.clear_chars()
+    this.lex.un_get_char(false)
+    console.info('comment linear ignored...')
   }
   comment_star(): void {
-    throw new Error('Method not implemented.')
+    //chek infinit time to find \n char
+    let finished = false
+    while (!finished) {
+      this.lex.get_char(false)
+
+      if (patterns.STAR.test(this.ch)) {
+        this.lex.get_char(false)
+
+        if (patterns.SLASH.test(this.ch)) {
+          this.lex.get_char(false)
+          finished = true
+          break
+        }
+
+        this.lex.un_get_char(false)
+      }
+    }
+    //to back last char
+    this.lex.un_get_char(false)
+    console.info('comment star ignored...')
   }
   num(): TokenType {
     this.lex.get_char()
@@ -114,7 +134,6 @@ export class Lexer implements ILexer, ILexerAtomata {
       c == '}' ||
       c == '[' ||
       c == ']' ||
-      c == '/' ||
       c == '"' ||
       c == "'"
     )
@@ -135,6 +154,7 @@ export class Lexer implements ILexer, ILexerAtomata {
       c == '!' ||
       c == '&' ||
       c == '|' ||
+      c == '/' ||
       c == '+' ||
       c == '-' ||
       c == '.' ||
@@ -153,6 +173,10 @@ export class Lexer implements ILexer, ILexerAtomata {
     //if comment token return spec token and skip this line
     if (c2 == '--') {
       this.comment_line()
+      return TokenType.TOKEN_SPEC2
+    }
+    if (c2 == '/*') {
+      this.comment_star()
       return TokenType.TOKEN_SPEC2
     }
     //can not be 3 chars
