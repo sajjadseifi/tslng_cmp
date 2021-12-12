@@ -168,7 +168,7 @@ export class Lexer implements ILexer, ILexerAtomata {
       return TokenType.TOKEN_SPEC2
 
     //can be 3 chars
-    if (c2 == '==' || c2 == '!=') return this.spec3()
+    if (c2 == '==' || c2 == '!=' || c2 == '..') return this.spec3()
 
     this.lex.un_get_char()
 
@@ -178,7 +178,7 @@ export class Lexer implements ILexer, ILexerAtomata {
     this.lex.get_char()
     const c3 = this.lex.tmp
     //3 size tok
-    if (c3 == '===' || c3 == '!==') return TokenType.TOKEN_SPEC3
+    if (c3 == '===' || c3 == '!==' || c3 == '...') return TokenType.TOKEN_SPEC3
 
     //un get char to corrent position of spec2
     this.lex.un_get_char()
