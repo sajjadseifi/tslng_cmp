@@ -8,16 +8,21 @@ export interface ILexer {
 }
 
 export interface ILexerAtomata {
+  is_keyword(): boolean
   init(): TokenError
-  comment_line(): void
-  comment_star(): void
   num(): TokenType
   real(): TokenType
   iden(): TokenType
-  is_keyword(): boolean
-  spec1(): TokenType
+  str(): TokenTypeError | null
+  str_single_cahr(): TokenTypeError
+  str_linear(): TokenTypeError
+  str_big_string(): TokenTypeError
+  skiper_signle_char(): void
+  spec1(): TokenTypeError
   spec2(): TokenType
   spec3(): TokenType
   error5(): TokenTypeError
   error13(): TokenTypeError
+  comment_line(): void
+  comment_star(): void
 }
