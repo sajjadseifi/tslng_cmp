@@ -2,7 +2,14 @@
     function sajjad() returns Int:
       --is now comment comments
       val sajjad : Int = 10;
-      if(sajjad == 10)
-        sajjad = 50;
+
+
+      val f1 : Float = .010;
+      
+            val ff : Float = 0.010;
+
+      if(sajjad == 1)
+        ff = f1 + sajjad;
+
     end
 
