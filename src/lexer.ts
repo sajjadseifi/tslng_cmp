@@ -203,17 +203,17 @@ export class Lexer implements ILexer, ILexerAtomata {
 
     switch (val) {
       case keywords.FUNCTION:
-        return TokenType.TOKEN_FUNCTION
+        return TokenType.TOKEN_KEYWORD_FUNCTION
       case keywords.RETURNS:
-        return TokenType.TOKEN_RETURNS
+        return TokenType.TOKEN_KEYWORD_RETURNS
       case keywords.IF:
-        return TokenType.TOKEN_IF
+        return TokenType.TOKEN_IDENTIFIER
       case keywords.RETURN:
-        return TokenType.TOKEN_RETURN
+        return TokenType.TOKEN_KEYWORD_RETURN
       case keywords.VAL:
-        return TokenType.TOKEN_VAL
+        return TokenType.TOKEN_KEYWORD_VAL
       case keywords.END:
-        return TokenType.TOKEN_END
+        return TokenType.TOKEN_KEYWORD_END
       default:
         return NULL
     }
