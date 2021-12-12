@@ -2,9 +2,10 @@ import { patterns } from './constants'
 import { Position } from './pos'
 import { ILex, IPosition } from './types'
 import fs from 'fs'
+import { keywords } from './constants'
 
 export class Lex implements ILex {
-  ch?: string
+  ch: string
   length: number
   pos: IPosition
   index: number
@@ -21,8 +22,9 @@ export class Lex implements ILex {
   private update_ch() {
     const num = fs.readSync(this.fd, this.buffer, 0, 1, this.index)
     const ch = String.fromCharCode(this.buffer[0])
-    if (num === 0) this.ch = undefined
-    else this.ch = ch
+    if (num === 0) {
+      this.ch = keywords.END
+    } else this.ch = ch
   }
   get_char(use_tmp = true): void {
     if (this.eof) {
@@ -63,6 +65,6 @@ export class Lex implements ILex {
     this.un_get_char(false)
   }
   get eof(): boolean {
-    return this.ch == undefined
+    return this.ch == keywords.END
   }
 }
