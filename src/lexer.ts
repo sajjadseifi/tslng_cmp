@@ -1,10 +1,11 @@
 import { Lex } from './lex'
 import { ILex, IToken, TokenType } from './types'
 import { ILexer, ILexerAtomata } from './types/lexer'
-import { TokenError, TokenTypeError } from './types/type'
+import { Keyword, TokenError, TokenTypeError } from './types/type'
 import { keywords, patterns } from './constants'
 import { Token } from './token'
 import { LexicalError } from './error'
+import { NULL } from './constants/val'
 export class Lexer implements ILexer, ILexerAtomata {
   lex: ILex
   finished: boolean
@@ -186,18 +187,36 @@ export class Lexer implements ILexer, ILexerAtomata {
     //check alpha & numberic & "_"
     if (patterns.APHA_NUMERIC_UNDE.test(this.ch)) return this.iden()
     //is keyword token
-    if (this.is_keyword()) return TokenType.TOKEN_KEYWORD
+    let tok_type = null
+    if ((tok_type = this.keyword())) return tok_type
 
     return TokenType.TOKEN_IDENTIFIER
   }
-  is_keyword(): boolean {
+  keyword(): TokenType | null {
     //remove end char (bad charachter)
     this.lex.un_get_char()
+
     const val = this.lex.tmp
+
     //add removed char to resolve on the upper method (init) (bad charachter)
     this.lex.get_char()
 
-    return keywords.list.some((k) => k === val)
+    switch (val) {
+      case keywords.FUNCTION:
+        return TokenType.TOKEN_FUNCTION
+      case keywords.RETURNS:
+        return TokenType.TOKEN_RETURNS
+      case keywords.IF:
+        return TokenType.TOKEN_IF
+      case keywords.RETURN:
+        return TokenType.TOKEN_RETURN
+      case keywords.VAL:
+        return TokenType.TOKEN_VAL
+      case keywords.END:
+        return TokenType.TOKEN_END
+      default:
+        return NULL
+    }
   }
   spec1(): TokenTypeError {
     //add for un-get-char in init
