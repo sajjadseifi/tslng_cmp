@@ -227,7 +227,16 @@ export class Lexer implements ILexer, ILexerAtomata {
       return str_tok
     }
     //cant 2 cahrs token
-    if (c == '(' || c == ')' || c == '{' || c == '}' || c == '[' || c == ']')
+    if (
+      c == '(' ||
+      c == ')' ||
+      c == '{' ||
+      c == '}' ||
+      c == '[' ||
+      c == ']' ||
+      c == ':' ||
+      c == ';'
+    )
       return TokenType.TOKEN_SPEC1
     //if c == . can be real number
     if (c == '.') {
