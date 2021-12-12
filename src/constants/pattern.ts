@@ -17,4 +17,14 @@ export const SPECIAL_CHAR = /[^A-Za-z0-9]/
 export const POINT = /^\.$/
 
 export const STAR = /^\*$/
+
 export const SLASH = /^\/$/
+export const BACK_SLASH = /^\\$/
+
+export const SINGLE_QOUTE = /^'$/
+
+export const DOUBLE_QOUTE = /^"$/
+
+export const BACKTICK = /^`$/
+
+export const END_STR = /^\0$/
