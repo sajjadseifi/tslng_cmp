@@ -1,21 +1,16 @@
   
     function sajjad() returns Int:
-      --is now comment comments
-      val sajjad : Int = 10;
-    /* 
-    
-     sajjad seifi 
-     sd asdad asdad
-
-     dasd asdas
-    */
-
-      val f1 : Float = .010;
+      val s1 = 'c';
+      val s2 = 'cc';
+      val somsmas = "cc";
+      val mas = "cc
+      ";
+      val sam = `
       
-            val ff : Float = 0.010;
-
-      if(sajjad == 1)
-        ff = f1 + sajjad;
-
+      ssdf sf sdfsdfsdf
+      sdf sdf sdf
+      cc
+      
+      `;
     end
 
