@@ -9,16 +9,20 @@ import { LexicalError } from './error'
 export class Lexer implements ILexer, ILexerAtomata {
   lex: ILex
   finished: boolean
-  constructor(public src: string) {
-    this.lex = new Lex(src)
+  constructor(public fd: number) {
+    this.lex = new Lex(fd)
     this.finished = false
+  }
+  get ch(): string {
+    // console.log('this.lex.ch', this.lex.ch)
+    return this.lex.ch!
   }
   skip_white_space() {
     //at first char
     this.lex.get_char()
 
     //check if white space loop infinit
-    while (WHITE_SPACE.test(this.lex.ch)) this.lex.get_char()
+    while (WHITE_SPACE.test(this.ch)) this.lex.get_char()
 
     //while end ch dosnt white space
     this.lex.un_get_char()
@@ -37,7 +41,6 @@ export class Lexer implements ILexer, ILexerAtomata {
     this.lex.get_char()
 
     let tok_type: TokenTypeError
-
     if (this.lex.eof) return new Token(this.eof(), undefined, this.lex.pos)
     //get identifier
     else if (patterns.APHABETIC.test(this.lex.tmp)) tok_type = this.iden()
@@ -86,23 +89,23 @@ export class Lexer implements ILexer, ILexerAtomata {
   num(): TokenType {
     this.lex.get_char()
     //get number
-    if (patterns.NUMERIC.test(this.lex.ch)) return this.num()
+    if (patterns.NUMERIC.test(this.ch)) return this.num()
     //get real number
-    if (patterns.POINT.test(this.lex.ch)) return this.real()
+    if (patterns.POINT.test(this.ch)) return this.real()
 
     return TokenType.TOKEN_NUMBER
   }
   real(): TokenType {
     this.lex.get_char()
     //get after Pint digit number
-    if (patterns.NUMERIC.test(this.lex.ch)) return this.real()
+    if (patterns.NUMERIC.test(this.ch)) return this.real()
 
     return TokenType.TOKEN_REAL
   }
   iden(): TokenType {
     this.lex.get_char()
     //check alpha & numberic & "_"
-    if (patterns.APHA_NUMERIC_UNDE.test(this.lex.ch)) return this.iden()
+    if (patterns.APHA_NUMERIC_UNDE.test(this.ch)) return this.iden()
     //is keyword token
     if (this.is_keyword()) return TokenType.TOKEN_KEYWORD
 
