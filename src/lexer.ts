@@ -121,7 +121,13 @@ export class Lexer implements ILexer, ILexerAtomata {
     return TokenType.TOKEN_IDENTIFIER
   }
   is_keyword(): boolean {
-    return keywords.list.some((k) => k === this.lex.tmp)
+    //remove end char (bad charachter)
+    this.lex.un_get_char()
+    const val = this.lex.tmp
+    //add removed char to resolve on the upper method (init) (bad charachter)
+    this.lex.get_char()
+
+    return keywords.list.some((k) => k === val)
   }
   spec1(): TokenType {
     //add for un-get-char in init
