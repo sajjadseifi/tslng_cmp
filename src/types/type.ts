@@ -1,4 +1,4 @@
-import { keywords } from '@src/constants'
+import { keywords } from '../constants'
 import { IToken, TokenType } from '.'
 import { ILexerError } from './error'
 
@@ -11,3 +11,5 @@ export type LenOne = string
 export type LenTow = string
 
 export type Keyword = keyof typeof keywords
+
+export type FuncType = (...rest: any[]) => any

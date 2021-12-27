@@ -1,3 +1,6 @@
 export * as patterns from './pattern'
 export * as keywords from './keyword'
+export * as codes from './code'
+export * as sym from './sym'
 export * as val from './val'
+export * as typedef from './type-def'

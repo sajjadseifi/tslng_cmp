@@ -2,8 +2,9 @@
   "name": "personal-website",
   "version": "0.1.0",
   "private": true,
+  "typings": "all.d.ts",
   "scripts": {
-    "start": "ts-node src/index.ts",
+    "start": "ts-node -e 'import { main } from \"./src/index\"; main()'",
     "build": "tsc src/index.ts",
     "lint": "eslint . --no-ignore",
     "lint:fix": "eslint . --no-ignore  --fix",
@@ -39,5 +40,8 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "dependencies": {
+    "libcore-parser-lalr": "^0.2.2"
   }
 }

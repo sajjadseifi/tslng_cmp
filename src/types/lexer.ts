@@ -5,6 +5,8 @@ export interface ILexer {
   finished: boolean
   prev_token(): TokenError
   next_token(): TokenError
+  follow(counts: number): TokenError[]
+  get counter_line(): number
 }
 
 export interface ILexerAtomata {

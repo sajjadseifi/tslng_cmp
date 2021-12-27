@@ -1,0 +1,2 @@
+export {}
+export const getInt = () => {}

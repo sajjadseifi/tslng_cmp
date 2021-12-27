@@ -6,13 +6,19 @@ import { keywords, patterns } from './constants'
 import { Token } from './token'
 import { LexicalError } from './error'
 import { NULL } from './constants/val'
+import { APHA_NUMERIC_UNDE, SPECIAL_CHAR } from './constants/pattern'
 export class Lexer implements ILexer, ILexerAtomata {
   lex: ILex
   finished: boolean
+
   constructor(public fd: number) {
     this.lex = new Lex(fd)
     this.finished = false
   }
+  get counter_line(): number {
+    return this.lex.line_number
+  }
+
   skiper_signle_char(): void {
     while (
       //skip all to find single qoute
@@ -84,7 +90,6 @@ export class Lexer implements ILexer, ILexerAtomata {
     return null
   }
   get ch(): string {
-    // console.log('this.lex.ch', this.lex.ch)
     return this.lex.ch!
   }
 
@@ -94,6 +99,17 @@ export class Lexer implements ILexer, ILexerAtomata {
   next_token(): TokenError {
     return this.init()
   }
+  follow(counts: number): TokenError[] {
+    const lex = this.lex as Lex
+    const saved = lex.get_index
+    const res: TokenError[] = []
+
+    while (counts-- > 0) res.push(this.next_token())
+
+    lex.set_index(saved)
+
+    return res
+  }
   init(): TokenError {
     //cleraing tmp varaible of lexer
     this.lex.clear_chars()
@@ -101,7 +117,6 @@ export class Lexer implements ILexer, ILexerAtomata {
     this.lex.skip_white_space()
     //get first new char in file
     this.lex.get_char()
-
     let tok_type: TokenTypeError
     if (this.lex.eof) return this.eof()
     //get identifier
@@ -185,7 +200,13 @@ export class Lexer implements ILexer, ILexerAtomata {
   iden(): TokenType {
     this.lex.get_char()
     //check alpha & numberic & "_"
-    if (patterns.APHA_NUMERIC_UNDE.test(this.ch)) return this.iden()
+
+    if (
+      SPECIAL_CHAR.test(this.ch) === false ||
+      APHA_NUMERIC_UNDE.test(this.ch)
+    ) {
+      return this.iden()
+    }
     //is keyword token
     let tok_type = null
     if ((tok_type = this.keyword())) return tok_type
@@ -195,12 +216,11 @@ export class Lexer implements ILexer, ILexerAtomata {
   keyword(): TokenType | null {
     //remove end char (bad charachter)
     this.lex.un_get_char()
-
+    //
     const val = this.lex.tmp
-
     //add removed char to resolve on the upper method (init) (bad charachter)
     this.lex.get_char()
-
+    //
     switch (val) {
       case keywords.FUNCTION:
         return TokenType.TOKEN_KEYWORD_FUNCTION
@@ -214,6 +234,16 @@ export class Lexer implements ILexer, ILexerAtomata {
         return TokenType.TOKEN_KEYWORD_VAL
       case keywords.END:
         return TokenType.TOKEN_KEYWORD_END
+      case keywords.DO:
+        return TokenType.TOKEN_KEYWORD_DO
+      case keywords.ELSE:
+        return TokenType.TOKEN_KEYWORD_ELSE
+      case keywords.OF:
+        return TokenType.TOKEN_KEYWORD_OF
+      case keywords.FOREACH:
+        return TokenType.TOKEN_KEYWORD_FOREACH
+      case keywords.WHILE:
+        return TokenType.TOKEN_KEYWORD_WHILE
       default:
         return NULL
     }
@@ -312,6 +342,6 @@ export class Lexer implements ILexer, ILexerAtomata {
     return new LexicalError('error 5 state machin')
   }
   error13(): TokenTypeError {
-    return new LexicalError('error 3 state machin')
+    return new LexicalError('error 13 state machin')
   }
 }

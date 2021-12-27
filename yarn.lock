@@ -2140,6 +2140,42 @@ __metadata:
   languageName: node
   linkType: hard
 
+"libcore-parser-lalr@npm:^0.2.2":
+  version: 0.2.2
+  resolution: "libcore-parser-lalr@npm:0.2.2"
+  dependencies:
+    libcore: 0.3.7
+    libcore-tokenizer: 0.1.8
+  dependenciesMeta:
+    libcore:
+      optional: true
+    libcore-tokenizer:
+      optional: true
+  bin:
+    libcore-parser-lalr: ./command-line/index.js
+  checksum: 097c7816c3cfec707450fd77481dad341d63ba39f9e204507aeb308affa32d33f611c1e1415e4c39e8721bfe229748d3e180974d74d2f84a975f346dd098c38d
+  languageName: node
+  linkType: hard
+
+"libcore-tokenizer@npm:0.1.8":
+  version: 0.1.8
+  resolution: "libcore-tokenizer@npm:0.1.8"
+  dependencies:
+    libcore: 0.3.7
+  dependenciesMeta:
+    libcore:
+      optional: true
+  checksum: 687f1af4faf89cc9220a7927570b92119bd60f3554209ae80797e87135dc72722b40952f2c1420d192962905a6e7da0d1ed2fc58923457598f16b01b71011517
+  languageName: node
+  linkType: hard
+
+"libcore@npm:0.3.7":
+  version: 0.3.7
+  resolution: "libcore@npm:0.3.7"
+  checksum: 03a4f9e8085c5cb0dde369a74c7126949f210e58ff74753539fefc5c6148fc1fc93eb5d82fe60a64d714585dab4c980cd7f2e5d7260a10e33e441fbab9897171
+  languageName: node
+  linkType: hard
+
 "load-json-file@npm:^2.0.0":
   version: 2.0.0
   resolution: "load-json-file@npm:2.0.0"
@@ -2582,6 +2618,7 @@ __metadata:
     eslint-plugin-shopify: ^35.1.0
     eslint-webpack-plugin: ^3.0.1
     husky: ^7.0.4
+    libcore-parser-lalr: ^0.2.2
     prettier: ^2.5.1
     shopify: ^0.1.0
     ts-node: ^10.4.0

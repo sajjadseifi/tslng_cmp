@@ -1,0 +1,63 @@
+
+//bad function
+function sajjad()
+function ()
+functio sajjad()
+sajjad()
+()
+
+//bad iden
+function sajjad()
+function {keyowrd}()
+function {spec}()
+function ()
+
+//find first
+"(" | "," | ")" | ":"
+
+tok*()
+tok*)
+tok*,)
+tok*:
+
+//clist error
+exp,exp
+,exp
+exp,,exp
+exp exp
+
+//bad returns
+ret Int:
+Int :
+:
+
+//bad typing
+tok not typ
+//
+Int {spec not :}
+Int tok* 
+
+
+//cal function
+func(a,b):
+func(a,):
+func(a,):
+func(a,)
+func(a, :
+func(a,
+func(
+func(a
+
+//function args
+fc name(type arg0);
+fc name(arg0);
+fc name(type);
+fc name(type arg0,):
+fc name(type ,):
+fc name(type arg return int
+fc name(type arg type arg type return int
+    val
+    foreach
+
+end
+

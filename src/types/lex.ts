@@ -5,6 +5,7 @@ export interface ILex {
   length: number
   pos: IPosition
   tmp: string
+  line_number: number
   get_char(use_tmp?: boolean): void
   un_get_char(use_tmp?: boolean): void
   clear_chars(): void
