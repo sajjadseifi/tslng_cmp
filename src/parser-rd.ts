@@ -1,32 +1,39 @@
-import { Token } from '../token'
-import { keywords, sym, typedef } from '../constants'
-import { Sym, SymbolTable } from '../symbol'
+import { Token } from './token'
+import { keywords, sym, typedef } from './constants'
+import { Sym, SymbolTable } from './symbol'
 import {
   ILogger,
   ISymbol,
   ISymbolTable,
   IToken,
   KeySymbol,
-  SymbolType,
-  SymNulable,
-  TokenType
-} from '../types'
-import { ILexer } from '../types/lexer'
-import { EpxrType, IParser, IParserRD } from '../types/parser'
-import { LexicalError } from '../error'
-import { Logger } from '../logger'
-import { tokChecker, typeCheking } from '../utils'
-import { IErrorCorrection } from '../types/error-correction'
+  SymbolType
+} from './types'
+import { ILexer } from './types/lexer'
+import { EpxrType, IParser, IParserRD } from './types/parser'
+import { LexicalError } from './error'
+import { Logger } from './logger'
+import { tokChecker, typeCheking } from './utils'
+import { IErrorCorrection } from './types/error-correction'
 import { ErrorCorrection } from './error-correction'
-import { is_iden, is_num, is_type } from '../utils/token-cheker'
-import { IFocusList } from '../types/focus'
-import { FocusList } from '../focus'
-import { ISuggestion, Suggestion } from '../suggestion'
+import {
+  is_alpha,
+  is_func,
+  is_iden,
+  is_num,
+  is_type,
+  is_val
+} from './utils/token-cheker'
+import { IFocusList } from './types/focus'
+import { FocusList } from './focus'
+import { ISuggestion, Suggestion } from './suggestion'
+import { IConfig } from './config'
+import { same_type } from './utils/type-checking'
 
 export enum StatusIDEN {
   FREE,
   CALL,
-  DEFIND,
+  DEFINED,
   FOREACH
 }
 
@@ -38,37 +45,46 @@ export class Parser implements IParserRD, IParser {
   private logger: ILogger
   private func_arg: ISymbolTable
   private suggest: ISuggestion
-  constructor(public lexer: ILexer) {
+  private can_run: boolean
+  private log_lex: boolean
+  constructor(public lexer: ILexer, public config: IConfig) {
     this.symtbl = new SymbolTable()
-    this.init()
     this.crntstbl = this.symtbl
     this.logger = new Logger(lexer)
     this.func_arg = new SymbolTable()
     this.ec = new ErrorCorrection(this, this.logger)
     this.focuses = new FocusList()
     this.suggest = new Suggestion(this, this.logger)
+    this.can_run = false
+    this.log_lex = false
+    this.init()
   }
   get current_symbols() {
     return this.crntstbl.symbols
   }
   private init() {
     //built in functions
-    this.symtbl.add_node(new Sym('getInt', sym.INT, 0))
-    this.symtbl.add_node(new Sym('printInt', sym.NIL, 1))
-    this.symtbl.add_node(new Sym('createArray', sym.ARRAY, 1))
-    this.symtbl.add_node(new Sym('arrayLength', sym.INT, 1))
-    this.symtbl.add_node(new Sym('exit', sym.NIL, 1))
+    this.symtbl.builtin('getInt', sym.INT)
+    this.symtbl.builtin('printInt', sym.NIL, ['n'], [sym.INT])
+    this.symtbl.builtin('createArray', sym.ARRAY, ['n'], [sym.INT])
+    this.symtbl.builtin('arrayLength', sym.INT, ['n'], [sym.INT])
+    this.symtbl.builtin('arrayLength', sym.NIL, ['n'], [sym.INT])
+    this.symtbl.used_all()
+
+    // this.loging_lexer()
   }
-  log(message: string) {
-    console.log(message)
+  loging_lexer() {
+    this.log_lex = true
   }
   next(): IToken {
     const tok = this.lexer.next_token()
 
     if (tok instanceof Token) {
-      if (tokChecker.is_eof(tok)) {
-        process.exit(0)
-      }
+      //log token
+      if (this.log_lex) console.log(tok.val)
+      //exit app
+      if (tokChecker.is_eof(tok)) process.exit(0)
+
       return tok
     }
     console.log(tok as LexicalError)
@@ -84,18 +100,26 @@ export class Parser implements IParserRD, IParser {
 
     return res as IToken[]
   }
-  private get cline() {
-    return this.lexer.counter_line
+  func_scop = (scop_key: any) => {
+    return scop_key === keywords.FUNCTION && this.crntstbl.last!
   }
-
   out_scop = () => {
     this.crntstbl = this.crntstbl.parrent!
-    this.crntstbl.del_node(this.crntstbl.last())
+    this.crntstbl.del_node(this.crntstbl.last)
   }
-  goto_scop = (symscop: Sym) => {
-    symscop.init_subtable(this.crntstbl)
+  goto_scop = (scop_key: string | number) => {
+    //get scop node
+    const symscop: ISymbol = this.func_scop(scop_key)
+      ? this.crntstbl.last!
+      : new Sym(scop_key, sym.NIL)
+    //if scop not a function must init subtable to use new scop
+    if (!symscop.is_func) {
+      symscop.init_subtable(this.crntstbl)
+    }
     this.crntstbl = symscop.subTables!
+    //join arg of eny things to first table for function , foreach or ...
     this.crntstbl.join(this.func_arg)
+    //clear func_arg to
     this.func_arg.clear()
   }
   new_scop = () => new Sym(undefined) as ISymbol
@@ -103,7 +127,15 @@ export class Parser implements IParserRD, IParser {
     this.prog()
   }
   prog(): void {
-    if (this.lexer.finished) return
+    if (this.lexer.finished) {
+      //root not used function decleared
+      this.suggest.declared_and_not_used()
+      if (this.can_run === false)
+        this.logger.semantic_err(
+          `can not find '${this.config.start}' function to start program`
+        )
+      return
+    }
     //init function
     this.func()
     //re call prog
@@ -114,22 +146,23 @@ export class Parser implements IParserRD, IParser {
     let prmc = -1
     let type = sym.EMPTY
 
-    this.crntstbl = this.symtbl
     this.ec.function_start()
     //after function
     fcname = this.ec.function_in_iden()!
-    console.log()
+
     let symnode: ISymbol = new Sym(fcname)
     symnode.init_subtable(this.crntstbl)
-
+    //if main start function used on first level application
+    if (!this.can_run && fcname === this.config.start) {
+      this.can_run = true
+      symnode.used()
+    }
+    //check exsit in symbol table and show semantic error
     if (fcname && this.crntstbl.exist(fcname)) {
       this.logger.is_decleared(fcname)
       //change to scop if name same
-      symnode.set_key(-1)
+      // symnode.set_key(-1)
     }
-
-    this.crntstbl.add_node(symnode)
-
     //skeeping
     this.ec.function_skeep_tokn_not_valid()
     //add defined to foucuses table
@@ -139,14 +172,13 @@ export class Parser implements IParserRD, IParser {
     //pop function defined in focuses table
     this.focuses.pop()
     //set count of params function
-    symnode!.set_prms_count(prmc)
-
+    symnode.set_prms_count(prmc)
     //returns place
     this.ec.function_in_return()
-
     /* Return Typeing */
     type = this.ec.function_return_type()
-    symnode!.set_type(type as SymbolType)
+    symnode.set_type(type as SymbolType)
+    this.crntstbl.add_node(symnode)
 
     this.ec.body_begin(0, keywords.FUNCTION)
 
@@ -154,9 +186,8 @@ export class Parser implements IParserRD, IParser {
   }
   body(scop: number = 0, skop_key?: string): boolean {
     let ended = false
-    const symscop = new Sym(skop_key || scop, sym.NIL)
     //goto sub scop
-    this.goto_scop(symscop)
+    this.goto_scop(skop_key || scop)
 
     if (this.stmt(scop, skop_key)) {
       ended = this.body(scop, skop_key)
@@ -271,7 +302,7 @@ export class Parser implements IParserRD, IParser {
       this.next()
 
       const symbol = this.func_arg.put(tok.val!, sym.INT)!
-      this.focuses.free(symbol.key)
+      this.focuses.foreach(symbol)
 
       if (this.in_follow(keywords.OF)) {
         this.next()
@@ -291,30 +322,59 @@ export class Parser implements IParserRD, IParser {
   }
 
   defvar(): boolean {
-    if (this.in_follow(keywords.VAL) === false) return false
-
-    this.next()
-
-    const toktype = this.type()
-
-    if (toktype instanceof Token) {
-      this.log(
-        ': syntax error missing type type of variable mu be (Array,Nil,Int)'
-      )
+    let name = undefined
+    let type: SymbolType = sym.EMPTY
+    let vled = is_val(this.first_follow)
+    if (vled) this.next()
+    //if can declear variable without 'val'
+    else if (!this.ec.val_4step_can_defined()) {
       return false
     }
-    const iden = this.iden()
-    if (iden.type !== TokenType.TOKEN_IDENTIFIER) {
-      this.log(
-        `: syntax error during declear variable '${iden.val}' is not identifier.'`
+
+    const [first, follow] = this.follow(2)
+
+    if (first == null) return true
+
+    if (is_type(first)) {
+      type = this.type() as SymbolType
+      if (is_iden(follow)) {
+        name = follow.val!
+        this.next()
+      } else {
+        //if start defvar not with val -> type any
+        this.suggest.first_must_after_follow(follow, 'identifier', 'type')
+
+        if (vled === false && (is_type(follow) || is_num(follow))) {
+          name = follow.val!
+          this.next()
+        }
+      }
+    } else if (is_iden(first)) {
+      //error syntax first must be a type
+      this.logger.type_invalid_err(this.next())
+      //iden type reversed
+      if (is_type(follow)) {
+        this.suggest.first_must_after_follow(follow, 'identifier', 'type')
+        name = first.val!
+        type = follow.type as SymbolType
+      } else if (
+        is_iden(follow) || //
+        (is_alpha(first) && is_num(follow))
       )
-      return false
+        //in alphabet num; iden ordered to identifier
+        name = follow.val
+      //in iden num; iden ordered to identifier
+      else name = first.val
+
+      if (name) this.next()
     }
-    if (this.crntstbl.exist(iden.val!)) {
-      this.log(`identifier ${iden.val} decleared at same in same scop!`)
+
+    if (this.crntstbl.exist(name!)) {
+      this.logger.is_decleared(name!)
     } else {
-      this.crntstbl.put(iden.val!, toktype as SymbolType, false)
+      this.crntstbl.put(name!, type, false)
     }
+
     return true
   }
   side_capsolate(
@@ -527,7 +587,7 @@ export class Parser implements IParserRD, IParser {
     //after array expr[expr ]
     if (isArr) this.focuses.pop()
 
-    return isArr ? sym.INT : typ
+    return isArr ? sym.ARRAY : typ
   }
   prim_expr(): EpxrType {
     const tok = this.first_follow
@@ -543,6 +603,7 @@ export class Parser implements IParserRD, IParser {
 
       if (this.in_follow('(')) {
         //add function or expr calling last table
+        // console.log(iden)
         if (iden) this.focuses.call(iden)
         //if expr not founded in symbol table
         else this.focuses.free(val)
@@ -551,7 +612,6 @@ export class Parser implements IParserRD, IParser {
         //out of function expresion
         this.focuses.pop()
       }
-
       return iden ? iden.type! : sym.NIL
     } //
     if (tokChecker.is_num(tok)) {
@@ -602,7 +662,7 @@ export class Parser implements IParserRD, IParser {
     const status = this.ec.flist_before_type(pos)
 
     if (status === 1) {
-      return 1 + this.flist(pos)
+      return 1 + this.flist(pos + 1)
     } else if (status === 0) {
       return 0
     }
@@ -618,44 +678,57 @@ export class Parser implements IParserRD, IParser {
       return 0
     }
 
-    if (is_iden(this.first_follow)) {
-      //
-      arg_name = this.iden().val!
-    } else {
-      //
-      this.logger.syntax_err(`expected name of arg${pos}`)
-    }
+    if (is_iden(this.first_follow)) arg_name = this.iden().val!
+    //
+    else this.logger.syntax_err(`expected name of arg${pos}`)
 
     const ex_arg = arg_name && this.func_arg.get(arg_name)
 
     if (ex_arg) {
-      //
       const type = this.type_str(ex_arg.type)
       this.logger.arg_defined_last(ex_arg.key, ex_arg.index, type)
-    } else {
-      //
-      const arg = new Sym(arg_name, arg_type)
-      arg.set_index(pos)
-      this.func_arg.add_node(arg)
+      // arg_name = undefined
     }
+    const arg = new Sym(arg_name, arg_type)
+    arg.set_index(pos)
+    this.func_arg.add_node(arg)
     //skeep for counting
     if (this.in_follow(',')) {
       this.next()
     }
     return 1 + this.flist(pos + 1)
   }
+  get fcs() {
+    return this.focuses.focus!
+  }
   clist(pos: number = 0): number {
-    const empty = typeCheking.is_empty(this.expr())
-
+    const exp_tpye = this.expr()
+    const empty = typeCheking.is_empty(exp_tpye)
+    const snode = this.fcs.sym
+    if (empty) {
+      this.logger.arg_empty_call(pos)
+    } else if (
+      this.fcs.is_call && //not free
+      snode?.is_func && //is function not identifier
+      snode?.param_counts > pos //position defined function must greater than eq pos
+    ) {
+      //get argument at position of symbols
+      const arg_at_pos = snode.subTables!.symbols[pos]
+      //mismatch arg defined and arg call function
+      if (!same_type(arg_at_pos.type!, exp_tpye)) {
+        const ctyp = arg_at_pos.type!
+        const btyp = exp_tpye
+        const fname = snode.key! as string
+        this.logger.type_mismatch_arg_func(pos, fname, btyp, ctyp)
+      }
+    }
     if (this.in_follow(',')) {
       this.next()
       return this.clist(pos + 1) + 1
     }
     //eny token not 'expr' and ','
-    if (empty) {
-      this.logger.syntax_err(`at position ${pos} of arg call function`)
-      return 0
-    }
+    if (empty) return 0
+
     //(a,)*a
     return 1
   }

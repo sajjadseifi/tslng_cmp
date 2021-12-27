@@ -61,3 +61,15 @@ fc name(type arg type arg type return int
 
 end
 
+
+
+val type iden;
+val type     ;
+val      iden;
+//not val at first
+type iden;
+iden iden;
+iden type;
+type type;
+
+type;

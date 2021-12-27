@@ -47,4 +47,10 @@ export interface IErrorCorrection {
   expr_array_end_bracket(symnode: ISymbol): void
   //
   expr_iden_is_func(iden: ISymbol, exist: boolean): void
+  //definition val
+  val_4step_can_defined(): boolean
+  //ignored type after type val
+  val_ignored_type_after_type(): void
+  val_ignored_type_iden(): void
+  ignored(cb: () => boolean): void
 }

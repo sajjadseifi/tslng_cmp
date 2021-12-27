@@ -1,10 +1,15 @@
-import { typedef, keywords } from '../constants'
+import { typedef, keywords, patterns } from '../constants'
 import { IToken, TokenType } from '../types'
 
 export const is_num = (token: IToken) => token.type === TokenType.TOKEN_NUMBER
 
+export const is_alpha = (token: IToken) =>
+  patterns.ALPHABETIC_STAR.test(token.val!)
+
 export const is_iden = (token: IToken) =>
   token.type === TokenType.TOKEN_IDENTIFIER
+
+export const is_sem = (token: IToken) => token.val === ';'
 
 export const is_spec = (token: IToken) =>
   token.type === TokenType.TOKEN_SPEC1 || //
@@ -54,3 +59,5 @@ export const is_keyword = (token: IToken) =>
   is_returns(token) ||
   is_begin(token) ||
   is_end(token)
+
+export const type_iden = (token: IToken) => is_iden(token) || is_type(token)

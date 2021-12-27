@@ -44,5 +44,12 @@ export interface ISymbolTable {
   find_in_scop(key: string): SymNulable
   find_globaly(key: string): SymNulable
   first(): SymNulable
-  last(): SymNulable
+  get last(): SymNulable
+  builtin(
+    name: string,
+    ret_type: SymbolType,
+    args?: string[],
+    args_type?: SymbolType[]
+  ): void
+  used_all(): void
 }

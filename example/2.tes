@@ -10,7 +10,7 @@ function find(Array A,Int x) returns Int:
     end
     return -1;
 
-function main() returns Int:
+function man() returns Int:
     val Array A;
     val Int a;
     A = createArray(3);

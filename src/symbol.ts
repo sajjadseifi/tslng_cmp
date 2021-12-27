@@ -60,6 +60,25 @@ export class SymbolTable implements ISymbolTable {
   constructor() {
     this.symbols = []
   }
+  builtin(
+    name: string,
+    ret_type: SymbolType,
+    args: string[] = [],
+    args_type: SymbolType[] = []
+  ): void {
+    let prmc = args.length < args_type.length ? args.length : args_type.length
+    const func = this.put(name, ret_type, true, prmc)
+    if (func === null) return
+
+    func.init_subtable(this)
+
+    for (let i = 0; i < prmc; i++) {
+      func.subTables!.put(args[i], args_type[i])
+    }
+  }
+  used_all(): void {
+    this.symbols.forEach((sym) => sym.used())
+  }
   get len() {
     return this.symbols.length
   }
@@ -68,7 +87,7 @@ export class SymbolTable implements ISymbolTable {
 
     return this.symbols[0]
   }
-  last(): ISymbol | null {
+  get last(): ISymbol | null {
     if (this.len == 0) return null
 
     return this.symbols[this.len - 1]

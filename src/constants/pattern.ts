@@ -1,4 +1,5 @@
 export const APHABETIC = /^[a-zA-Z]$/
+export const ALPHABETIC_STAR = /^[a-zA-Z]+$/
 
 export const IDENTIFIER = /^[a-zA-z_][a-zA-z_0-9]*$/
 

@@ -1,20 +1,54 @@
-import { ILogger, ISymbol, IToken, SymbolType } from '../types'
-import { ChekTokFunc, IErrorCorrection } from '../types/error-correction'
-import { EpxrType } from '../types/parser'
-import { tokChecker, typeCheking } from '../utils'
-import { Parser } from '.'
-import { keywords, sym } from '../constants'
+import { ILogger, ISymbol, IToken, SymbolType } from './types'
+import { ChekTokFunc, IErrorCorrection } from './types/error-correction'
+import { EpxrType } from './types/parser'
+import { tokChecker, typeCheking } from './utils'
+import { Parser } from './parser-rd'
+import { keywords, sym } from './constants'
 import {
   is_iden,
+  is_num,
   is_return,
   is_returns,
+  is_sem,
   is_spec,
-  is_type
-} from '../utils/token-cheker'
-import { same_type } from '../utils/type-checking'
+  is_type,
+  type_iden
+} from './utils/token-cheker'
+import { same_type } from './utils/type-checking'
 
 export class ErrorCorrection implements IErrorCorrection {
   constructor(public parser: Parser, public logger: ILogger) {}
+  ignored(cb: () => boolean): void {
+    while (cb()) this.parser.next()
+  }
+  val_ignored_type_iden(): void {
+    this.ignored(() => type_iden(this.parser.first_follow))
+  }
+  val_ignored_type_after_type(): void {
+    this.ignored(() => is_type(this.parser.first_follow))
+  }
+  val_4step_can_defined(): boolean {
+    const [first, follow, sem] = this.parser.follow(2)
+    if (!first || !follow) {
+      return false
+    }
+    // type iden | type type
+    if (is_type(first) && type_iden(follow)) {
+      return true
+    }
+    // iden type ; | iden iden ;
+    // need semicolon becuse iden can expr
+    if (
+      sem && //
+      is_iden(first) && //
+      (type_iden(follow) || is_num(follow)) && //
+      is_sem(sem)
+    ) {
+      return true
+    }
+
+    return false
+  }
   private caps_clist(exist: boolean, prmc: number, val: string) {
     const c = this.parser.clist()
     if (exist && c !== prmc) {
@@ -150,11 +184,6 @@ export class ErrorCorrection implements IErrorCorrection {
     if (typeCheking.is_empty(exist)) {
       this.logger.syntax_err('pleas add expersion after of keyword.')
     }
-    //  else if (!typeCheking.is_array(exist)) {
-    //   this.logger.syntax_err(
-    //     'expersion after of in foreach need to be Array type'
-    //   )
-    // }
   }
   foreach_after_expr(exist: EpxrType) {
     if (typeCheking.is_empty(exist)) {
@@ -214,7 +243,7 @@ export class ErrorCorrection implements IErrorCorrection {
   function_return_type(): SymbolType {
     const tok = this.parser.first_follow
     if (is_type(tok) === false) {
-      this.logger.ret_type_err()
+      this.logger.type_ret_err()
       if (is_iden(tok)) {
         this.parser.next()
       }

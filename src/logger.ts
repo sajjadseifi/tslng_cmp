@@ -1,12 +1,48 @@
 import { keywords } from './constants'
-import { ILogger, ISymbol, IToken } from './types'
+import { StatusIDEN } from './parser-rd'
+import { ILogger, IPosition, ISymbol, IToken, SymbolType } from './types'
+import { IFocuse } from './types/focus'
 import { ILexer } from './types/lexer'
+import { type_str } from './utils/type-checking'
 
 export class Logger implements ILogger {
   constructor(public lexer: ILexer) {}
-  declared_and_not_used(symbol: ISymbol): void {
-    let noune = symbol.is_func ? keywords.FUNCTION : keywords.VAL
-    this.semantic_err(`${noune} ${symbol.key} is declared but not used`)
+  type_mismatch_arg_func(
+    arg_pos: number,
+    func_name: string,
+    bad_type: SymbolType,
+    correct_type: SymbolType
+  ): void {
+    this.semantic_err(
+      `mismatch type arg(${arg_pos}) of '${func_name}' is not '${type_str(
+        bad_type
+      )}' must be ${type_str(correct_type)}`
+    )
+  }
+  arg_empty_call(pos: number): void {
+    this.syntax_err(`empty at position ${pos} of arg call function`)
+  }
+
+  warining(message: string): void {
+    console.warn(`:: warning :: ${message}`)
+  }
+  warn_with_pos(pos: IPosition, message: string) {
+    this.warining(`${message} in row ${pos.row} and col ${pos.col}`)
+  }
+  declared_and_not_used(symbl: ISymbol, focuse: IFocuse | null): void {
+    let str
+    if (focuse && focuse.status === StatusIDEN.FOREACH) {
+      str = `${keywords.FOREACH} identifier`
+    } else if (symbl.is_func) {
+      str = keywords.FUNCTION
+    } else {
+      str = keywords.VAL
+    }
+
+    this.warn_with_pos(
+      symbl.position,
+      `${str} '${symbl.key}' is declared but not used`
+    )
   }
 
   identifier_not_array(tok: string | IToken): void {
@@ -29,7 +65,7 @@ export class Logger implements ILogger {
   arg_defined_last(key: any, index: any, type: any): void {
     this.syntax_err(`arg ${key} defined at ${index} postion by type ${type}`)
   }
-  ret_type_err(): void {
+  type_ret_err(): void {
     return this.syntax_err('reutrn type must one of (Array,Int,Nil) type')
   }
   keyword_block_body(keyword: string, open: boolean = true): void {
@@ -59,7 +95,9 @@ export class Logger implements ILogger {
       } block near token '${token}' with ${open ? ':' : 'end'}`
     )
   }
-  type_err(token: IToken, word: string): void {}
+  type_invalid_err(token: IToken): void {
+    this.syntax_err(`invalid type ${token} valid type is (Array,Nil,Int)`)
+  }
   correct_word_place(token: IToken, word: string): void {
     return this.syntax_err(`near token '${token.val}' mus be '${word}'`)
   }
