@@ -7,6 +7,7 @@ import { Parser } from './parser-rd'
 export interface ICompiler {
   run(): void
 }
+
 export class Compiler {
   lexer!: ILexer
   parser!: IParser
@@ -30,5 +31,7 @@ export class Compiler {
       parser.run()
     })
   }
-  private override_conf() {}
+  private override_conf() {
+    this.config.path = this.config.path ?? this.config.default_path
+  }
 }

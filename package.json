@@ -42,6 +42,7 @@
     ]
   },
   "dependencies": {
+    "colors": "^1.4.0",
     "libcore-parser-lalr": "^0.2.2"
   }
 }

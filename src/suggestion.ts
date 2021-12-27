@@ -34,7 +34,7 @@ export class Suggestion implements ISuggestion {
 
         str = `${str} '${symbl.key}' is declared but not used`
 
-        this.logger.warn_with_pos(symbl.position, str)
+        this.logger.warining(str)
       }
   }
 }

@@ -3,10 +3,10 @@ import { IFocuse } from './focus'
 
 export interface ILogger {
   log(message: string): void
-  warining(message: string): void
-  log_with_line(message: string): void
-  syntax_err(message: string): void
-  semantic_err(message: string): void
+  warining(message: string, pos?: IPosition): void
+  log_with_line(message: string, pos?: IPosition): void
+  syntax_err(message: string, pos?: IPosition): void
+  semantic_err(message: string, pos?: IPosition): void
   not_defind(iden: string): void
   wrong_type_arg(iden: string, arg_index: number): void
   expected_arg(iden: string, expected: number, given: number): void

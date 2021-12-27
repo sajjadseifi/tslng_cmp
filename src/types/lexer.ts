@@ -1,4 +1,4 @@
-import { IToken, LenOne, LenTow, TokenType, TokenTypeError } from '.'
+import { IPosition, IToken, LenOne, LenTow, TokenType, TokenTypeError } from '.'
 import { TokenError } from './type'
 
 export interface ILexer {
@@ -6,7 +6,7 @@ export interface ILexer {
   prev_token(): TokenError
   next_token(): TokenError
   follow(counts: number): TokenError[]
-  get counter_line(): number
+  get pos(): IPosition
 }
 
 export interface ILexerAtomata {

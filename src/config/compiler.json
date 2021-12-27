@@ -1,4 +1,5 @@
 {
     "start":"main",
+    "default_path":"./example/2.tes",
     "path":null
 }

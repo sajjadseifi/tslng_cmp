@@ -5,8 +5,8 @@ export class Position implements IPosition {
   last_row(): void {
     this.row--
   }
-  last_col(): void {
-    this.col--
+  last_col(col: number): void {
+    this.col = col
   }
   new_row(): void {
     this.row++

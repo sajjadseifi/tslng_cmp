@@ -3,6 +3,7 @@ import { keywords, sym, typedef } from './constants'
 import { Sym, SymbolTable } from './symbol'
 import {
   ILogger,
+  IPosition,
   ISymbol,
   ISymbolTable,
   IToken,
@@ -50,7 +51,7 @@ export class Parser implements IParserRD, IParser {
   constructor(public lexer: ILexer, public config: IConfig) {
     this.symtbl = new SymbolTable()
     this.crntstbl = this.symtbl
-    this.logger = new Logger(lexer)
+    this.logger = new Logger(lexer, config)
     this.func_arg = new SymbolTable()
     this.ec = new ErrorCorrection(this, this.logger)
     this.focuses = new FocusList()
@@ -88,7 +89,7 @@ export class Parser implements IParserRD, IParser {
       return tok
     }
     console.log(tok as LexicalError)
-    return this.next()
+    process.exit(1)
   }
   get first_follow(): IToken {
     return this.follow(1)[0]
@@ -145,13 +146,15 @@ export class Parser implements IParserRD, IParser {
     let fcname
     let prmc = -1
     let type = sym.EMPTY
-
     this.ec.function_start()
     //after function
+    let tok = this.first_follow
     fcname = this.ec.function_in_iden()!
-
+    //create function symbol node
     let symnode: ISymbol = new Sym(fcname)
     symnode.init_subtable(this.crntstbl)
+    //if position can set pos
+    if (tok) symnode.set_pos(tok.pos!)
     //if main start function used on first level application
     if (!this.can_run && fcname === this.config.start) {
       this.can_run = true
@@ -179,7 +182,7 @@ export class Parser implements IParserRD, IParser {
     type = this.ec.function_return_type()
     symnode.set_type(type as SymbolType)
     this.crntstbl.add_node(symnode)
-
+    //start scop function
     this.ec.body_begin(0, keywords.FUNCTION)
 
     return true
@@ -303,6 +306,7 @@ export class Parser implements IParserRD, IParser {
 
       const symbol = this.func_arg.put(tok.val!, sym.INT)!
       this.focuses.foreach(symbol)
+      symbol.set_pos(tok.pos!)
 
       if (this.in_follow(keywords.OF)) {
         this.next()

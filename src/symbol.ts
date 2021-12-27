@@ -22,6 +22,9 @@ export class Sym implements ISymbol {
     this.set_prms_count(param_counts)
     this.position = new Position(-1, -1)
   }
+  set_pos(pos: IPosition): void {
+    this.position = pos
+  }
   is_used?: boolean | undefined
   used(): void {
     this.is_used = true

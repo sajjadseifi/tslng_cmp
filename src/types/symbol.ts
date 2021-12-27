@@ -19,6 +19,7 @@ export interface ISymbol {
   set_type(type: SymbolType): void
   set_key(key: KeySymbol): void
   set_index(index: number): void
+  set_pos(pos: IPosition): void
   set_prms_count(size: number): void
   add_symbol(sym: ISymbol): void
   init_subtable(parrent: ISymbolTable): void

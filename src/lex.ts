@@ -16,7 +16,7 @@ export class Lex implements ILex {
   constructor(public fd: number) {
     this.ch = ''
     this.index = -1
-    this.pos = new Position(0, 0)
+    this.pos = new Position(1, 0)
     this.tmp = ''
     this.length = 0
     this.buffer = Buffer.alloc(1)
@@ -33,8 +33,17 @@ export class Lex implements ILex {
     return this.dir == -1
   }
   set_index(index: number) {
-    this.index = index
-    this.update_ch()
+    if (this.index == index) return
+
+    if (index > this.index) {
+      while (!this.eof && index > this.index) {
+        this.get_char(false)
+      }
+    } else {
+      while (!this.begin && index < this.index) {
+        this.un_get_char(false)
+      }
+    }
   }
   get get_index(): number {
     return this.index
@@ -56,9 +65,11 @@ export class Lex implements ILex {
     this.index++
 
     this.update_ch()
-
-    if (this.ch == '\n') this.line_number++
-
+    //
+    if (this.ch == '\n') this.pos.new_row()
+    //
+    else this.pos.new_col()
+    //
     if (use_tmp) this.tmp += this.ch
   }
 
@@ -67,12 +78,17 @@ export class Lex implements ILex {
       this.index = -1
       return this.clear_chars()
     }
-
+    //
     this.index--
-
+    //
     this.update_ch()
-
-    if (this.ch == '\n') this.line_number--
+    //
+    if (this.ch == '\n') {
+      this.pos.last_row()
+      this.pos.last_col(this.col_back_line)
+    }
+    //
+    else this.pos.last_col(this.pos.col - 1)
 
     if (use_tmp && this.tmp.length > 0)
       this.tmp = this.tmp.substr(0, this.tmp.length - 1)
@@ -94,5 +110,24 @@ export class Lex implements ILex {
   }
   get eof(): boolean {
     return this.ch == keywords.EOF
+  }
+  get begin(): boolean {
+    return this.index < 1
+  }
+  get col_back_line(): number {
+    const saved = this.index
+    let col = saved
+    //rm \n
+    this.un_get_char(false)
+    while (!this.begin && !this.is_new_line) this.un_get_char()
+    //index-1 for geting prev line of this line char
+    if (!this.begin) col--
+    //saved-1 for saved index prev getch
+    col--
+    //subtract to get size of offset in start col of line
+    col = col - this.index
+    this.set_index(saved)
+
+    return col
   }
 }

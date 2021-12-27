@@ -1,7 +1,7 @@
 import { Lex } from './lex'
-import { ILex, IToken, TokenType } from './types'
+import { ILex, IPosition, IToken, TokenType } from './types'
 import { ILexer, ILexerAtomata } from './types/lexer'
-import { Keyword, TokenError, TokenTypeError } from './types/type'
+import { TokenError, TokenTypeError } from './types/type'
 import { keywords, patterns } from './constants'
 import { Token } from './token'
 import { LexicalError } from './error'
@@ -10,13 +10,12 @@ import { APHA_NUMERIC_UNDE, SPECIAL_CHAR } from './constants/pattern'
 export class Lexer implements ILexer, ILexerAtomata {
   lex: ILex
   finished: boolean
-
   constructor(public fd: number) {
     this.lex = new Lex(fd)
     this.finished = false
   }
-  get counter_line(): number {
-    return this.lex.line_number
+  get pos(): IPosition {
+    return this.lex.pos
   }
 
   skiper_signle_char(): void {
