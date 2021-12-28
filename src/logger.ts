@@ -1,5 +1,5 @@
 import { IConfig } from './config'
-import { keywords } from './constants'
+import { keywords, strs } from './constants'
 import { StatusIDEN } from './parser-rd'
 import { ILogger, IPosition, ISymbol, IToken, SymbolType } from './types'
 import { IFocuse } from './types/focus'
@@ -14,8 +14,17 @@ const iden_qute = (str: string) => incld_qute(str, colors.yellow)
 const kword_qute = (str: string) => incld_qute(str, colors.magenta)
 const num_qute = (num: any) => incld_qute(num, colors.yellow)
 
+export enum LoggerStatus {
+  ANY,
+  WARNINIG,
+  SYNTAX,
+  SEMANTIC
+}
 export class Logger implements ILogger {
-  constructor(public lexer: ILexer, public config: IConfig) {}
+  private status: LoggerStatus
+  constructor(public lexer: ILexer, public config: IConfig) {
+    this.status = LoggerStatus.ANY
+  }
   type_mismatch_arg_func(
     arg_pos: number,
     func_name: string,
@@ -117,17 +126,50 @@ export class Logger implements ILogger {
   is_decleared(token: string): void {
     this.syntax_err(`identifier ${iden_qute(token)} is decleard.`)
   }
+  private space = (counts: number) => [...Array(counts)].map(() => ' ').join('')
+  private title_with_status(
+    title: string,
+    status: LoggerStatus,
+    color: any,
+    message: string,
+    pos?: IPosition
+  ) {
+    const t = `:: ${title} ::`
+    const spase = this.space(t.length)
+
+    if (this.status !== status) {
+      this.title_log(3, t, color)
+    }
+
+    this.log_with_line(`${spase}${message}`, pos)
+    this.status = status
+  }
   syntax_err(message: string, pos?: IPosition): void {
-    this.title_log(3, ':: syntax error ::', colors.cyan)
-    this.log_with_line(message, pos)
+    this.title_with_status(
+      strs.syntax_error, //
+      LoggerStatus.SYNTAX, //
+      colors.cyan, //
+      message, //
+      pos //
+    )
   }
   semantic_err(message: string, pos?: IPosition): void {
-    this.title_log(3, ':: semantic error ::', colors.red)
-    this.log_with_line(message, pos)
+    this.title_with_status(
+      strs.semantic, //
+      LoggerStatus.SEMANTIC, //
+      colors.red, //
+      message, //
+      pos //
+    )
   }
   warining(message: string, pos?: IPosition): void {
-    this.title_log(3, ':: warning ::', colors.yellow)
-    this.log_with_line(message, pos)
+    this.title_with_status(
+      strs.warning, //
+      LoggerStatus.WARNINIG, //
+      colors.yellow, //
+      message, //
+      pos //
+    )
   }
 
   private title_log(h: number = 10, str: string = '', color?: any) {

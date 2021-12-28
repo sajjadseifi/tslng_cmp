@@ -1,6 +1,8 @@
+import { FD } from 'src/io'
 import { IPosition } from '.'
 
 export interface ILex {
+  fd?: FD
   ch: string
   length: number
   pos: IPosition

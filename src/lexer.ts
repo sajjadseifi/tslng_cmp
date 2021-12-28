@@ -10,9 +10,12 @@ import { APHA_NUMERIC_UNDE, SPECIAL_CHAR } from './constants/pattern'
 export class Lexer implements ILexer, ILexerAtomata {
   lex: ILex
   finished: boolean
-  constructor(public fd: number) {
+  constructor(public fd?: number) {
     this.lex = new Lex(fd)
     this.finished = false
+  }
+  set_fd(fd: number): void {
+    this.lex.fd = fd
   }
   get pos(): IPosition {
     return this.lex.pos

@@ -3,6 +3,8 @@ import { Position } from './pos'
 import { ILex, IPosition } from './types'
 import fs from 'fs'
 import { keywords } from './constants'
+import { FD } from './io'
+import { is_null, zero } from './utils'
 
 export class Lex implements ILex {
   dir: number = 0
@@ -13,7 +15,7 @@ export class Lex implements ILex {
   private buffer: Buffer
   tmp: string
   line_number: number
-  constructor(public fd: number) {
+  constructor(public fd?: FD) {
     this.ch = ''
     this.index = -1
     this.pos = new Position(1, 0)
@@ -49,13 +51,12 @@ export class Lex implements ILex {
     return this.index
   }
   update_ch() {
-    const num = fs.readSync(this.fd, this.buffer, 0, 1, this.index)
+    if (is_null(this.fd)) return
+
+    const num = fs.readSync(this.fd!, this.buffer, 0, 1, this.index)
     const ch = String.fromCharCode(this.buffer[0])
-    if (num === 0) {
-      this.ch = keywords.EOF
-    } else {
-      this.ch = ch
-    }
+    //num zero means end of file
+    this.ch = zero(num) ? keywords.EOF : ch
   }
   get_char(use_tmp = true): void {
     if (this.eof) {

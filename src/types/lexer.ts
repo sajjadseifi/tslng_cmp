@@ -1,3 +1,4 @@
+import { FD } from 'src/io'
 import { IPosition, IToken, LenOne, LenTow, TokenType, TokenTypeError } from '.'
 import { TokenError } from './type'
 
@@ -7,6 +8,7 @@ export interface ILexer {
   next_token(): TokenError
   follow(counts: number): TokenError[]
   get pos(): IPosition
+  set_fd(fd: FD): void
 }
 
 export interface ILexerAtomata {
