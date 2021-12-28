@@ -1,5 +1,5 @@
 import { sym } from './constants'
-import { StatusIDEN } from './parser-rd'
+import { StatusIDEN } from './parser'
 import { Sym } from './symbol'
 import { SymNulable } from './types'
 import { IFocuse, IFocusList } from './types/focus'

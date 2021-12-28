@@ -5,11 +5,12 @@
 // export type CType = IdenStr
 // export type FType = [IdenStr, TypeStr]
 
-import { IToken, SymbolType } from '.'
+import { ISymbolTable, IToken, SymbolType } from '.'
 export type EpxrType = SymbolType | -1
 export type Scop = string | number
 export interface IParser {
   run(): void
+  root: ISymbolTable
 }
 export interface IParserRD {
   prog(): void //

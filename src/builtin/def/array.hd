@@ -1,0 +1,6 @@
+
+-- creating array with size of 'n'
+createArray(Int n) returns Array;
+
+-- get length of array with Array  
+arrayLength(Array arr) returns Int;

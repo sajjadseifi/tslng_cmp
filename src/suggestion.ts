@@ -1,5 +1,5 @@
 import { keywords } from './constants'
-import { Parser } from './parser-rd'
+import { Parser } from './parser'
 import { ILogger, IToken } from './types'
 
 export interface ISuggestion {

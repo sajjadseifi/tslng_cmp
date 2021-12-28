@@ -13,3 +13,7 @@ export type LenTow = string
 export type Keyword = keyof typeof keywords
 
 export type FuncType = (...rest: any[]) => any
+
+export interface IRunner {
+  run(): void
+}

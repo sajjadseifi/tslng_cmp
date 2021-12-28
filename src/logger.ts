@@ -1,6 +1,6 @@
 import { IConfig } from './config'
 import { keywords, strs } from './constants'
-import { StatusIDEN } from './parser-rd'
+import { StatusIDEN } from './parser'
 import { ILogger, IPosition, ISymbol, IToken, SymbolType } from './types'
 import { IFocuse } from './types/focus'
 import { ILexer } from './types/lexer'
@@ -16,6 +16,7 @@ const num_qute = (num: any) => incld_qute(num, colors.yellow)
 
 export enum LoggerStatus {
   ANY,
+  ERROR,
   WARNINIG,
   SYNTAX,
   SEMANTIC
@@ -171,7 +172,20 @@ export class Logger implements ILogger {
       pos //
     )
   }
-
+  error(message: string, pos?: IPosition): void {
+    this.title_with_status(
+      strs.error, //
+      LoggerStatus.ERROR, //
+      colors.red, //
+      message, //
+      pos //
+    )
+  }
+  not_found_module(module: string) {
+    const lprn = colors.magenta('(')
+    const rprn = colors.magenta(')')
+    this.error(`can not find module ${lprn}${module}${rprn}`)
+  }
   private title_log(h: number = 10, str: string = '', color?: any) {
     //create h tag
     while (h-- > 0) str = colors.bold(str)
@@ -194,13 +208,20 @@ export class Logger implements ILogger {
   }
 
   log_with_line(message: string, _pos?: IPosition): void {
-    const pos = _pos ?? this.lexer.pos
+    const pos = _pos ?? this.lexer?.pos
     const lprn = colors.magenta('(')
     const rprn = colors.magenta(')')
-    const path = colors.green(`${this.config.path}`)
-    const row = colors.yellow(`${pos.row}`)
-    const col = colors.cyan(`${pos.col}`)
-    const str = `${lprn}${path}:${row}:${col}${rprn}`
+    const { dir, file } = this.config.app.path
+    const path = colors.green(`${dir}/${file}`)
+    let str
+    if (pos) {
+      const row = colors.yellow(`${pos.row}`)
+      const col = colors.cyan(`${pos.col}`)
+      str = `${lprn}${path}:${row}:${col}${rprn}`
+    } else {
+      str = `${lprn}${path}${rprn}`
+    }
+
     console.log(message, `at ${colors.bold(str)}`)
   }
 

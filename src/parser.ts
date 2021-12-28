@@ -30,6 +30,8 @@ import { FocusList } from './focus'
 import { ISuggestion, Suggestion } from './suggestion'
 import { IConfig } from './config'
 import { same_type } from './utils/type-checking'
+import { PreParser } from './post-parser'
+import { PostParser } from './pre-pareser'
 
 export enum StatusIDEN {
   FREE,
@@ -42,14 +44,16 @@ export class Parser implements IParserRD, IParser {
   symtbl: ISymbolTable
   ec: IErrorCorrection
   focuses: IFocusList
-  private crntstbl: ISymbolTable
-  private logger: ILogger
-  private func_arg: ISymbolTable
-  private suggest: ISuggestion
-  private can_run: boolean
-  private log_lex: boolean
-  constructor(public lexer: ILexer, public config: IConfig, logger: ILogger) {
-    this.logger = logger
+  crntstbl: ISymbolTable
+  func_arg: ISymbolTable
+  suggest: ISuggestion
+  can_run: boolean
+  log_lex: boolean
+  constructor(
+    public lexer: ILexer,
+    public config: IConfig,
+    public logger: ILogger
+  ) {
     this.symtbl = new SymbolTable()
     this.func_arg = new SymbolTable()
     this.ec = new ErrorCorrection(this, this.logger)
@@ -60,18 +64,14 @@ export class Parser implements IParserRD, IParser {
     this.log_lex = false
     this.init()
   }
+  get root(): ISymbolTable {
+    return this.symtbl
+  }
   get current_symbols() {
     return this.crntstbl.symbols
   }
   private init() {
-    //built in functions
-    this.symtbl.builtin('getInt', sym.INT)
-    this.symtbl.builtin('printInt', sym.NIL, ['n'], [sym.INT])
-    this.symtbl.builtin('createArray', sym.ARRAY, ['n'], [sym.INT])
-    this.symtbl.builtin('arrayLength', sym.INT, ['n'], [sym.INT])
-    this.symtbl.builtin('arrayLength', sym.NIL, ['n'], [sym.INT])
-    this.symtbl.used_all()
-
+    //
     // this.loging_lexer()
   }
   loging_lexer() {
@@ -133,7 +133,7 @@ export class Parser implements IParserRD, IParser {
       this.suggest.declared_and_not_used()
       if (this.can_run === false)
         this.logger.semantic_err(
-          `can not find '${this.config.start}' function to start program`
+          `can not find '${this.config.app.start}' function to start program`
         )
       return
     }
@@ -156,7 +156,7 @@ export class Parser implements IParserRD, IParser {
     //if position can set pos
     if (tok) symnode.set_pos(tok.pos!)
     //if main start function used on first level application
-    if (!this.can_run && fcname === this.config.start) {
+    if (!this.can_run && fcname === this.config.app.start) {
       this.can_run = true
       symnode.used()
     }

@@ -1,7 +1,17 @@
 {
-    "start":"main",
-    "path":{
-        "dir":"./example",
-        "file":"main.tes"
+    "app":{
+        "start":"main",
+        "path":{
+            "dir":"./example",
+            "file":"main.tes"
+        }
+    },
+    "def":{
+        "dir":"./src/builtin/def",
+        "file":"*"
+    },
+    "pck":{
+        "dir":"./src/builtin/def",
+        "file":"package.tson"
     }
 }

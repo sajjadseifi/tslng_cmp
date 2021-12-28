@@ -8,14 +8,14 @@ import { LexicalError } from './error'
 import { NULL } from './constants/val'
 import { APHA_NUMERIC_UNDE, SPECIAL_CHAR } from './constants/pattern'
 export class Lexer implements ILexer, ILexerAtomata {
-  lex: ILex
+  lex: Lex
   finished: boolean
-  constructor(public fd?: number) {
-    this.lex = new Lex(fd)
+  constructor(public fd: number, index: number) {
+    this.lex = new Lex(fd, index)
     this.finished = false
   }
-  set_fd(fd: number): void {
-    this.lex.fd = fd
+  set_fd(fd: number, index: number = 0): void {
+    this.lex.set_fd(fd, index)
   }
   get pos(): IPosition {
     return this.lex.pos

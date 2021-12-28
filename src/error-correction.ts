@@ -2,7 +2,7 @@ import { ILogger, ISymbol, IToken, SymbolType } from './types'
 import { ChekTokFunc, IErrorCorrection } from './types/error-correction'
 import { EpxrType } from './types/parser'
 import { tokChecker, typeCheking } from './utils'
-import { Parser } from './parser-rd'
+import { Parser } from './parser'
 import { keywords, sym } from './constants'
 import {
   is_iden,

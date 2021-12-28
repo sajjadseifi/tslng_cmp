@@ -11,19 +11,21 @@ export class Lex implements ILex {
   ch: string
   length: number
   pos: IPosition
-  index: number
   private buffer: Buffer
   tmp: string
   line_number: number
-  constructor(public fd?: FD) {
-    this.ch = ''
-    this.index = -1
+  constructor(public fd: FD = -1, public index: number = 0) {
+    this.buffer = Buffer.alloc(1)
     this.pos = new Position(1, 0)
+    this.dir_next()
+    this.ch = ''
     this.tmp = ''
     this.length = 0
-    this.buffer = Buffer.alloc(1)
-    this.dir_next()
     this.line_number = 0
+  }
+  set_fd(fd: FD, index: number) {
+    this.fd = fd
+    this.index = index
   }
   dir_next() {
     this.dir = 1

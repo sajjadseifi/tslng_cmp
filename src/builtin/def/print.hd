@@ -1,0 +1,3 @@
+
+--get int value
+getInt() returns Int;

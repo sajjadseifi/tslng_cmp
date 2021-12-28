@@ -8,6 +8,7 @@ export interface ILex {
   pos: IPosition
   tmp: string
   line_number: number
+  set_fd(fd: number, index: number): void
   get_char(use_tmp?: boolean): void
   un_get_char(use_tmp?: boolean): void
   clear_chars(): void

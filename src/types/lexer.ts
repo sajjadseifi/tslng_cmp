@@ -8,7 +8,7 @@ export interface ILexer {
   next_token(): TokenError
   follow(counts: number): TokenError[]
   get pos(): IPosition
-  set_fd(fd: FD): void
+  set_fd(fd: FD, index: number): void
 }
 
 export interface ILexerAtomata {

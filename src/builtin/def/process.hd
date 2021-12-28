@@ -1,0 +1,2 @@
+-- exit app with code in argument
+exit(Int n) returns Int;
