@@ -66,7 +66,8 @@ export class Compiler {
     this.parser = new Parser(
       this.lexer, //
       this.congigure.config, //
-      this.logger //
+      this.logger, //
+      this.root
     )
   }
   //
@@ -77,7 +78,7 @@ export class Compiler {
 
     //TODO add builtin to symbol
     //built in functions
-    const tbl = this.parser.root
+    const tbl = this.root
     tbl.builtin('getInt', sym.INT)
     tbl.builtin('printInt', sym.NIL, ['n'], [sym.INT])
     tbl.builtin('createArray', sym.ARRAY, ['n'], [sym.INT])

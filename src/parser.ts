@@ -49,12 +49,14 @@ export class Parser implements IParserRD, IParser {
   suggest: ISuggestion
   can_run: boolean
   log_lex: boolean
+
   constructor(
     public lexer: ILexer,
     public config: IConfig,
-    public logger: ILogger
+    public logger: ILogger,
+    root: ISymbolTable
   ) {
-    this.symtbl = new SymbolTable()
+    this.symtbl = root
     this.func_arg = new SymbolTable()
     this.ec = new ErrorCorrection(this, this.logger)
     this.focuses = new FocusList()
