@@ -17,3 +17,4 @@ export type FuncType = (...rest: any[]) => any
 export interface IRunner {
   run(): void
 }
+export type Nullable<T> = T | null
