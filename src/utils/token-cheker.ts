@@ -10,6 +10,8 @@ export const is_iden = (token: IToken) =>
   token.type === TokenType.TOKEN_IDENTIFIER
 
 export const is_sem = (token: IToken) => token.val === ';'
+export const is_str = (token: IToken) =>
+  token.type === TokenType.TOKEN_STR_LINEAE_CHARS
 
 export const is_spec = (token: IToken) =>
   token.type === TokenType.TOKEN_SPEC1 || //
@@ -21,6 +23,10 @@ export const is_type = (token: IToken) =>
   token.val === typedef.Int || //
   token.val === typedef.Nil //
 
+export const is_imp = (token: IToken) => token.val === keywords.IMP
+
+export const imp_or_mod = (token: IToken) =>
+  token && (is_imp(token) || is_str(token))
 export const is_func = (token: IToken) => token.val === keywords.FUNCTION
 
 export const is_while = (token: IToken) => token.val === keywords.WHILE

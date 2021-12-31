@@ -3,4 +3,8 @@
 createArray(Int n) returns Array;
 
 -- get length of array with Array  
-arrayLength(Array arr) returns Int;
+Int arrayLength(Array arr)
+{
+    $t0 = 0
+    $t1 = t0
+}

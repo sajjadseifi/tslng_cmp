@@ -1,10 +1,14 @@
 import { FD } from 'src/io'
 import { IPosition } from '.'
 
+export interface ILexProps {
+  fd: FD
+  index: number
+}
+
 export interface ILex {
   fd?: FD
   ch: string
-  length: number
   pos: IPosition
   tmp: string
   line_number: number
@@ -15,4 +19,5 @@ export interface ILex {
   skip_white_space(): void
   get eof(): boolean
   get is_new_line(): boolean
+  clear(): void
 }

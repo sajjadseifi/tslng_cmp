@@ -1,7 +1,8 @@
-import { Nullable } from 'src/types'
-import { is_null } from 'src/utils'
+import colros from 'colors'
+import { Nullable } from '../types'
+import { is_null } from '../utils'
 
-export type Key = number
+export type Key = number | string
 export type Value<T> = T
 
 export enum SearchMode {
@@ -11,8 +12,8 @@ export enum SearchMode {
   BFS,
   DFS
 }
+export type AsyncTraversalExcutor<T> = (node: IGraphNode<T>) => Promise<boolean>
 export type TraversalExcutor<T> = (node: IGraphNode<T>) => boolean
-
 export interface IGraphNode<T> {
   key: Key
   value: Value<T>
@@ -21,31 +22,54 @@ export interface IGraphNode<T> {
   is_child(key: Key): boolean
   get_child(key: Key): Nullable<IGraphNode<T>>
   rm_child(key: Key): Nullable<IGraphNode<T>>
+  visit(): void
+  un_visit(): void
+  log(start?: string): void
 }
 
 export interface IGraph<T> {
+  root: Nullable<IGraphNode<T>>
+  open_log(): void
+  close_log(): void
   add_generic(value: Value<T>, pkey: Key): Nullable<IGraphNode<T>>
   add_by_key(ckey: Key, pkey: Key): Nullable<IGraphNode<T>>
-  add(node: IGraphNode<T>, parent: IGraphNode<T>): Nullable<IGraphNode<T>>
+  add(
+    node: IGraphNode<T>,
+    parent: Nullable<IGraphNode<T>>
+  ): Nullable<IGraphNode<T>>
+  addT(
+    key: Key,
+    value: T,
+    parent: Nullable<IGraphNode<T>>
+  ): Nullable<IGraphNode<T>>
   rm(node: IGraphNode<T>): Nullable<IGraphNode<T>>
   rm_by_key(key: Key): Nullable<IGraphNode<T>>
   search(node: IGraphNode<T>): Nullable<IGraphNode<T>>
   search_by_key(key: Key): Nullable<IGraphNode<T>>
   parents(key: Key | IGraphNode<T>): IGraphNode<T>[]
   traversal(
-    root: IGraphNode<T>,
     mode: SearchMode,
-    cb?: TraversalExcutor<T>
+    cb?: TraversalExcutor<T>,
+    root?: IGraphNode<T>
   ): void
+  pruning(): void
   clear(): void
+  un_visit_all(root: IGraphNode<T>): void
 }
 
 export class GraphNode<T> implements IGraphNode<T> {
   children: IGraphNode<T>[]
   visited: boolean
-  constructor(public key: number, public value: T) {
+  constructor(public key: Key, public value: T) {
     this.visited = false
     this.children = []
+  }
+  log(start?: string): void {
+    console.log(
+      start || '',
+      colros.cyan(this.key as string),
+      colros.red('visited : ' + this.visited)
+    )
   }
 
   set_value(value: Value<T>) {
@@ -62,9 +86,9 @@ export class GraphNode<T> implements IGraphNode<T> {
   }
   add_child(child: IGraphNode<T>): void {
     //if exist not add
-    if (this.children.some((c) => c.key === child.key)) return
+    const exist = this.children.some((c) => c.key === child.key)
     //if dont exist add to childs
-    this.children.push(child)
+    if (!exist) this.children.push(child)
   }
   get_child(key: Key): Nullable<IGraphNode<T>> {
     for (const ch of this.children) {
@@ -88,15 +112,23 @@ export class GraphNode<T> implements IGraphNode<T> {
   }
 }
 
+const _defualt_executor = <T>(node: IGraphNode<T>): boolean => {
+  console.log(node.key)
+  return true
+}
 export class Graph<T> implements IGraph<T> {
   private uniq_key: number
   root: Nullable<IGraphNode<T>>
   logging: boolean = false
 
-  constructor(public executor: TraversalExcutor<T>, public generic?: boolean) {
+  constructor(
+    public executor: TraversalExcutor<T> = _defualt_executor,
+    public generic?: boolean
+  ) {
     this.uniq_key = 0
     this.root = null
   }
+
   open_log() {
     this.logging = true
   }
@@ -125,7 +157,7 @@ export class Graph<T> implements IGraph<T> {
   add_generic(value: Value<T>, pkey: Key): Nullable<IGraphNode<T>> {
     const parent = this.search_by_key(pkey)
 
-    if (parent === null) return null
+    if (this.root && parent === null) return null
 
     this.increase_uniq()
     const node = new GraphNode(this.uniq_key, value)
@@ -136,8 +168,16 @@ export class Graph<T> implements IGraph<T> {
     }
     //
     this.add(node, parent)
-
     return node
+  }
+  add_by_pk(key: Key, value: T, pkey: Key): Nullable<IGraphNode<T>> {
+    const parent = this.search_by_key(pkey)
+
+    if (parent) {
+      return this.addT(key, value, parent)
+    }
+
+    return null
   }
   add_by_key(ckey: number, pkey: Key): Nullable<IGraphNode<T>> {
     const parent = this.search_by_key(pkey)
@@ -152,12 +192,26 @@ export class Graph<T> implements IGraph<T> {
 
     return node
   }
-  add(node: IGraphNode<T>, parrent: IGraphNode<T>): Nullable<IGraphNode<T>> {
-    const p = parrent as GraphNode<T>
+  addT(key: Key, value: T, parent: IGraphNode<T>): Nullable<IGraphNode<T>> {
+    const node = new GraphNode<T>(key, value)
+    return this.add(node, parent)
+  }
+  add(
+    node: IGraphNode<T>,
+    parrent: Nullable<IGraphNode<T>>
+  ): Nullable<IGraphNode<T>> {
+    const _node = this.search_by_key(node.key) || node
 
-    p.add_child(node)
+    if (this.root === null) this.root = _node
+    else {
+      const p = parrent as GraphNode<T>
+      //if node child of parent
+      if (p.is_child(_node.key)) return null
+      //add child to parent
+      p.add_child(_node)
+    }
 
-    return node
+    return _node
   }
   rm(node: IGraphNode<T>): Nullable<IGraphNode<T>> {
     const _node = this.search(node)
@@ -174,14 +228,16 @@ export class Graph<T> implements IGraph<T> {
       //rm child on parrent
       prs.forEach((p) => p.rm_child(key))
     }
+    //
+    if (this.root === node) this.root = null
+
     return node
   }
   parents(key: Key | IGraphNode<T>): IGraphNode<T>[] {
     const prs: IGraphNode<T>[] = []
-    const _key: Key = typeof key === 'number' ? key : key.key
+    const tk = typeof key === 'number' || typeof key === 'string'
+    const _key: Key = tk ? key : key.key
     this.traversal(
-      //root ndoe
-      this.root,
       //bearth first mode
       SearchMode.BFS,
       (node) => {
@@ -197,7 +253,7 @@ export class Graph<T> implements IGraph<T> {
   search(node: IGraphNode<T>): Nullable<IGraphNode<T>> {
     let exist = null
 
-    this.traversal(this.root, SearchMode.BFS, (root) => {
+    this.traversal(SearchMode.BFS, (root) => {
       if (root !== node) return true
 
       exist = root
@@ -207,58 +263,61 @@ export class Graph<T> implements IGraph<T> {
     return exist
   }
   search_by_key(key: Key): Nullable<IGraphNode<T>> {
-    let exist = null
+    let exist: Nullable<IGraphNode<T>> = null
 
-    this.traversal(this.root, SearchMode.BFS, (root) => {
+    const cb = (root: IGraphNode<T>) => {
       if (root.key !== key) return true
 
       exist = root
       return false
-    })
+    }
+
+    this.traversal(SearchMode.BFS, cb)
 
     return exist
   }
 
   traversal(
-    root: Nullable<IGraphNode<T>>,
     mode: SearchMode,
-    cb?: TraversalExcutor<T>
+    cb?: TraversalExcutor<T>,
+    root?: Nullable<IGraphNode<T>>
   ): void {
-    const __cb__: TraversalExcutor<T> = (node) => this.exc(node, cb)
     const _root = root ?? this.root
-    //
+    const __cb__: TraversalExcutor<T> = (node) =>
+      this.exc(node, cb || this.executor)
+
     if (is_null(_root)) return
-    //
+
+    const visitor = new Map<string, boolean>()
     try {
-      //
-      this.primary_traversal(_root as GraphNode<T>, mode, __cb__)
+      this.primary_traversal(_root as GraphNode<T>, mode, __cb__, visitor)
+    } catch (err) {
     } finally {
-      // becuse all node is visited
-      if (mode === SearchMode.IN_ORDER) this.un_visit_all(root!)
+      visitor.clear()
     }
   }
-  private un_visit_all(root: IGraphNode<T>) {
+  un_visit_all(root: IGraphNode<T>) {
+    if (root == null) return
     const children = root.children as GraphNode<T>[]
+    root.un_visit()
 
     for (const node of children) {
-      if (!node.visited) continue
-
-      node.un_visit()
-
-      this.un_visit_all(node)
+      if (node.visited) {
+        this.un_visit_all(node)
+      }
     }
   }
   private primary_traversal(
     root: GraphNode<T>,
     mode: SearchMode,
-    __cb__: TraversalExcutor<T>
+    __cb__: TraversalExcutor<T>,
+    visitor: Map<string, boolean>
   ): boolean {
     //if root not exist
     if (root === null) return true
-
     const children = root.children as GraphNode<T>[]
     //visit root enterd in search
-    if (mode !== SearchMode.IN_ORDER) root.visit()
+    visitor.set(root.key as string, true)
     //[Bearth First Seach] First  Visit Child Of root
     if (mode === SearchMode.BFS) {
       //First visit root
@@ -267,26 +326,30 @@ export class Graph<T> implements IGraph<T> {
       for (const node of children) __cb__(node)
     }
     //[Depth First Search] See each node at the moment of meeting
-    if (mode === SearchMode.DFS || mode === SearchMode.PRE_ORDER) __cb__(root)
-
+    else if (mode === SearchMode.DFS || mode === SearchMode.PRE_ORDER)
+      __cb__(root)
+    //[In Order Traversal]
+    else if (mode === SearchMode.IN_ORDER && root.children.length === 0)
+      __cb__(root)
     //[Pre Order Traversal] First visit root
-    if (mode === SearchMode.POST_ORDER && root == this.root) __cb__(root)
+    else if (mode === SearchMode.POST_ORDER && root == this.root) __cb__(root)
+
     //seach for all child not visited
     for (const node of children) {
       //Check the node if it was not visited
-      if (node.visited) continue
+      if (visitor.has(node.key as string)) continue
       //search children not visited node
-      this.primary_traversal(node, mode, __cb__)
+      this.primary_traversal(node, mode, __cb__, visitor)
+      //[In Order Traversal] first back track on child,root must visit
+      if (mode === SearchMode.IN_ORDER && !root.visited) __cb__(root)
     }
     //[Post Order Traversal] Seach When Node Visit End
     if (mode === SearchMode.POST_ORDER) __cb__(root)
-    //un visit root for the observed node and end of traversal
-    if (mode === SearchMode.IN_ORDER) {
-      root.visit()
-      __cb__(root)
-    } else root.un_visit()
 
     return true
+  }
+  pruning(): void {
+    throw new Error('Method not implemented.')
   }
 
   clear(): void {

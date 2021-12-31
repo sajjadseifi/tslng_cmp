@@ -34,4 +34,5 @@ export interface ILogger {
     correct_type: SymbolType
   ): void
   arg_empty_call(pos: number): void
+  not_found_start_func(starter?: string): void
 }

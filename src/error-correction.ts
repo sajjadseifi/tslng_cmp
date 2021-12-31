@@ -2,7 +2,6 @@ import { ILogger, ISymbol, IToken, SymbolType } from './types'
 import { ChekTokFunc, IErrorCorrection } from './types/error-correction'
 import { EpxrType } from './types/parser'
 import { tokChecker, typeCheking } from './utils'
-import { Parser } from './parser'
 import { keywords, sym } from './constants'
 import {
   is_iden,
@@ -15,6 +14,8 @@ import {
   type_iden
 } from './utils/token-cheker'
 import { same_type } from './utils/type-checking'
+import { Parser } from './parser/parser'
+import { TesParser } from './parser/tes-parser'
 
 export class ErrorCorrection implements IErrorCorrection {
   constructor(public parser: Parser, public logger: ILogger) {}
@@ -49,20 +50,7 @@ export class ErrorCorrection implements IErrorCorrection {
 
     return false
   }
-  private caps_clist(exist: boolean, prmc: number, val: string) {
-    const c = this.parser.clist()
-    if (exist && c !== prmc) {
-      this.logger.expected_arg(val, prmc, c)
-    }
-  }
-  expr_iden_is_func(iden: ISymbol, exist: boolean): void {
-    const val = iden.key!.toString()
-    const prmc = exist === false ? 0 : iden.param_counts
 
-    const center = () => this.caps_clist(exist, prmc, val)
-
-    this.parser.capsolate('(', ')', center, false)
-  }
   expr_array_end_bracket(symnode: ISymbol): void {
     if (this.parser.in_follow(']')) {
       this.parser.next()
@@ -127,15 +115,7 @@ export class ErrorCorrection implements IErrorCorrection {
       }
     }
   }
-  /* Body Begin or not with token ':'*/
-  body_begin(scop: number, keyword: string): void {
-    if (this.parser.in_follow(':') == false) {
-      this.logger.keyword_block_body(keyword, true)
-      this.parser.new_scop_stmt(scop, keyword)
-    } else {
-      this.parser.body(scop, keyword)
-    }
-  }
+
   befor_function() {
     let tok = this.parser.first_follow
     if (tokChecker.is_func(tok)) return
@@ -178,7 +158,7 @@ export class ErrorCorrection implements IErrorCorrection {
     this.foreach_after_of()
   }
   foreach_after_of() {
-    this.foreach_after_expr(this.parser.expr())
+    this.foreach_after_expr(new TesParser(this.parser).expr())
   }
   foreach_in_expr_type(exist: EpxrType): void {
     if (typeCheking.is_empty(exist)) {
@@ -201,7 +181,7 @@ export class ErrorCorrection implements IErrorCorrection {
     const tok = this.parser.first_follow
     //init :: befor letter function
     if (!tokChecker.is_func(tok)) {
-      this.logger.correct_word_place(tok, 'function')
+      this.logger.correct_word_place(tok, keywords.FUNCTION)
 
       this.parser.ec.first_follow_spec(is_iden, is_iden)
     } else {
@@ -250,6 +230,32 @@ export class ErrorCorrection implements IErrorCorrection {
 
       return sym.EMPTY
     }
-    return this.parser.type() as SymbolType
+    const tprs = new TesParser(this.parser)
+
+    return tprs.type() as SymbolType
+  }
+  private caps_clist(exist: boolean, prmc: number, val: string) {
+    const c = new TesParser(this.parser).clist()
+    if (exist && c !== prmc) {
+      this.parser.logger.expected_arg(val, prmc, c)
+    }
+  }
+  expr_iden_is_func(iden: ISymbol, exist: boolean): void {
+    const val = `${iden.key}`
+    const prmc = exist === false ? 0 : iden.param_counts
+
+    const center = () => this.caps_clist(exist, prmc, val)
+
+    this.parser.capsolate('(', ')', center, false)
+  }
+  /* Body Begin or not with token ':'*/
+  body_begin(scop: number, keyword: string): void {
+    const tsprs = new TesParser(this.parser)
+    if (this.parser.in_follow(':') == false) {
+      this.parser.logger.keyword_block_body(keyword, true)
+      tsprs.new_scop_stmt(scop, keyword)
+    } else {
+      tsprs.body(scop, keyword)
+    }
   }
 }

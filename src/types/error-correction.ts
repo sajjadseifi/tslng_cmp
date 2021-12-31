@@ -45,7 +45,6 @@ export interface IErrorCorrection {
   expr_array_start_bracket(sym: ISymbol, type: SymbolType): boolean
   //
   expr_array_end_bracket(symnode: ISymbol): void
-  //
   expr_iden_is_func(iden: ISymbol, exist: boolean): void
   //definition val
   val_4step_can_defined(): boolean

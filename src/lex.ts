@@ -7,34 +7,27 @@ import { FD } from './io'
 import { is_null, zero } from './utils'
 
 export class Lex implements ILex {
-  dir: number = 0
   ch: string
-  length: number
   pos: IPosition
   private buffer: Buffer
   tmp: string
   line_number: number
-  constructor(public fd: FD = -1, public index: number = 0) {
+  constructor(public fd: FD = -1, public index: number = -1) {
     this.buffer = Buffer.alloc(1)
     this.pos = new Position(1, 0)
-    this.dir_next()
     this.ch = ''
     this.tmp = ''
-    this.length = 0
+    this.line_number = 0
+  }
+  clear(): void {
+    this.pos = new Position(1, 0)
+    this.ch = ''
+    this.tmp = ''
     this.line_number = 0
   }
   set_fd(fd: FD, index: number) {
     this.fd = fd
     this.index = index
-  }
-  dir_next() {
-    this.dir = 1
-  }
-  dir_prev() {
-    this.dir = -1
-  }
-  get is_next() {
-    return this.dir == -1
   }
   set_index(index: number) {
     if (this.index == index) return
@@ -70,7 +63,6 @@ export class Lex implements ILex {
     this.update_ch()
     //
     if (this.ch == '\n') this.pos.new_row()
-    //
     else this.pos.new_col()
     //
     if (use_tmp) this.tmp += this.ch

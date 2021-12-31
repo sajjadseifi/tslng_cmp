@@ -1,18 +1,23 @@
-import { IRunner } from './types'
+import { SubParser } from './parser/types'
 
 export interface IHeaderParser {}
 /*
     prog := prog |
             prog func
 
-    func :=  function iden(flist); 
+    func := fc ; |
+            fc: ass-body end 
+   
+    fc := function iden(flist) 
 
-    iden := [a-zA-Z][a-zA-Z_0-9]*
+    ass-body := Use ASS-Parser
 
 */
-export class HeaderParser implements IRunner {
+
+export class HeaderParser extends SubParser {
   run(): void {
     throw new Error('Method not implemented.')
   }
   prog() {}
+  func() {}
 }

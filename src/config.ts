@@ -1,7 +1,7 @@
-export interface IPath {
-  dir: string
-  file: string
-}
+import path from 'path'
+import fs from 'fs'
+import { FileExtention, IPath, IPathTes } from './lib/path'
+
 export interface IApp {
   start: string
   path: IPath
@@ -12,23 +12,19 @@ export interface IConfig {
   pck: IPath
   conf_path: string
   default_path: string
+  base_route: string
+  full_path: string
 }
 
 export const _defalut = require('./config/compiler.json') as IConfig
 
 export class ConfigurManagemnt {
-  constructor(public config: IConfig = _defalut) {}
-  init() {
-    console.log(this.config)
-    // this.config.app = this. ?? this.config.default_path
-  }
+  constructor(public tpath: IPathTes, public config: IConfig = _defalut) {}
+  init() {}
   get def_path() {
-    return this.path_to_str(this.config.def)
+    return this.tpath.path_to_str(this.config.def, true)
   }
   get app_path() {
-    return this.path_to_str(this.config.app.path)
-  }
-  private path_to_str(path: IPath) {
-    return `${path.dir}/${path.file}`
+    return this.tpath.path_to_str(this.config.app.path, true)
   }
 }

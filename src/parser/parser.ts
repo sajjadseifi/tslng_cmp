@@ -1,0 +1,243 @@
+import { Token } from '../token'
+import { keywords, sym, typedef } from '../constants'
+import { Sym, SymbolTable } from '../symbol'
+import {
+  ILogger,
+  ISymbol,
+  ISymbolTable,
+  IToken,
+  KeySymbol,
+  Nullable,
+  SymbolType
+} from '../types'
+import { ILexer } from '../types/lexer'
+import { LexicalError } from '../error'
+import { is_null, tokChecker } from '../utils'
+import { IErrorCorrection } from '../types/error-correction'
+import { ErrorCorrection } from '../error-correction'
+import { is_iden, is_num, is_type } from '../utils/token-cheker'
+import { IFocusList } from '../types/focus'
+import { FocusList } from '../focus'
+import { ISuggestion } from '../suggestion'
+import { IConfig } from '../config'
+import { IGraphNode } from '../lib/graph'
+import { IModule } from '../graph-module'
+import { ParserMode, IParserBase, SubParser, SubParserTT } from './types'
+import { FileExtention } from 'src/lib/path'
+import { PME } from './PME'
+
+export class Parser implements IParserBase {
+  symtbl: ISymbolTable
+  ec: IErrorCorrection
+  focuses: IFocusList
+  crntstbl: ISymbolTable
+  func_arg: ISymbolTable
+  can_run: boolean
+  log_lex: boolean
+  module_node?: IGraphNode<IModule>
+  imports: string[]
+  error: boolean
+  parsers: PME
+  constructor(
+    public lexer: ILexer,
+    public config: IConfig,
+    public logger: ILogger,
+    public suggest: ISuggestion,
+    root: ISymbolTable
+  ) {
+    this.func_arg = new SymbolTable()
+    this.ec = new ErrorCorrection(this, this.logger)
+    this.focuses = new FocusList()
+    this.symtbl = root
+    this.crntstbl = root
+    this.can_run = false
+    this.log_lex = false
+    this.error = false
+    this.imports = []
+    this.parsers = new PME()
+  }
+  get imp_mods() {
+    return this.module_node?.children! || []
+  }
+  get modules() {
+    return this.module_node?.value!
+  }
+
+  execute(__SP__?: Nullable<SubParserTT>): void {
+    if (is_null(__SP__)) return
+
+    const parser = new __SP__!(this)
+
+    parser.parse()
+  }
+  private get mod_tbls() {
+    return this.imp_mods.map((mn) => mn.value.symbols) || []
+  }
+
+  new_PME(parser: SubParserTT, mode: ParserMode, ext: FileExtention): void {
+    this.parsers.set(parser, mode, ext)
+  }
+  sym_declared(key: KeySymbol): ISymbol[] {
+    const tbl_stak = [this.crntstbl, ...this.mod_tbls]
+    const syms: ISymbol[] = []
+    let sym = null
+    for (const tbl of tbl_stak) {
+      sym = this.crntstbl.get(key as string)
+      if (sym) {
+        syms.push(sym)
+      }
+    }
+    return syms
+  }
+  is_declared(key: KeySymbol): boolean {
+    const strk = key as string
+    const tbl_stak = [this.crntstbl, ...this.mod_tbls]
+    const ex = (stbl: ISymbolTable) => stbl.exist(strk)
+
+    return tbl_stak.some(ex)
+  }
+  set_symbols(symbols: ISymbolTable): void {
+    this.crntstbl = this.symtbl = symbols
+  }
+  set_module_node(node: IGraphNode<IModule>): void {
+    this.module_node = node
+    this.lexer.clear()
+    node.value.update_plex()
+    this.lexer.set_fd(node.value.plex)
+    this.set_symbols(node.value.symbols)
+  }
+  unset_module_node(): void {
+    const modl = this.module_node!.value
+    modl.set_plex(modl.plex.fd, this.lexer.char_index)
+    this.module_node = undefined
+  }
+  get root(): ISymbolTable {
+    return this.symtbl
+  }
+  get current_symbols() {
+    return this.crntstbl.symbols
+  }
+
+  loging_lexer() {
+    this.log_lex = true
+  }
+  next(): IToken {
+    const tok = this.lexer.next_token()
+    if (tok instanceof Token) {
+      //log token
+      if (this.log_lex) console.log(tok)
+      //exit app
+      if (tokChecker.is_eof(tok)) process.exit(0)
+
+      return tok
+    }
+    console.log(tok as LexicalError)
+    process.exit(1)
+  }
+  get first_follow(): IToken {
+    return this.follow(1)[0]
+  }
+  follow(size: number): IToken[] {
+    const res = this.lexer.follow(size) || []
+    //
+    for (let r of res) if (r instanceof LexicalError) throw new Error(r.message)
+
+    return res as IToken[]
+  }
+  func_scop = (scop_key: any) => {
+    return scop_key === keywords.FUNCTION && this.crntstbl.last!
+  }
+  out_scop = () => {
+    this.crntstbl = this.crntstbl.parrent!
+    // if parser
+    // this.crntstbl.del_node(this.crntstbl.last)
+  }
+  goto_scop = (scop_key: string | number) => {
+    //get scop node
+    const symscop: ISymbol = this.func_scop(scop_key)
+      ? this.crntstbl.last!
+      : new Sym(scop_key, sym.NIL)
+    //if scop not a function must init subtable to use new scop
+    if (!symscop.is_func) {
+      symscop.init_subtable(this.crntstbl)
+    }
+    this.crntstbl = symscop.subTables!
+    //join arg of eny things to first table for function , foreach or ...
+    this.crntstbl.join(this.func_arg)
+    //clear func_arg to
+    this.func_arg.clear()
+  }
+
+  side_capsolate(
+    exp: string,
+    strict: boolean,
+    open: boolean,
+    show_err?: boolean
+  ) {
+    if (this.in_follow(exp)) {
+      this.next()
+      return false
+    }
+    if (show_err) {
+      this.logger.capsolate_syntax_err(exp, open)
+    }
+
+    return strict
+  }
+  capsolate = (
+    left: string,
+    right: string,
+    callback: () => any,
+    strict: boolean = true,
+    show_err?: boolean
+  ): boolean => {
+    const cb = callback.bind(this)
+    //left open capsolate
+    if (this.side_capsolate(left, strict, true, show_err)) return false
+    //center state run
+    if (cb() == false && strict) return false
+    //right close capsolate
+    if (this.side_capsolate(right, strict, false, show_err)) return false
+    //
+    return true
+  }
+  forward_chek(...items: string[]): boolean {
+    const flw = this.follow(items.length)
+
+    for (let i = 0; i < flw.length; i++) {
+      if (flw[i].val === items[i]) continue
+
+      return false
+    }
+    return true
+  }
+  in_follow(...terminals: string[]): boolean {
+    const [flw] = this.follow(1)
+
+    for (let i = 0; i < terminals.length; i++) {
+      if (flw.val == terminals[i]) return true
+    }
+
+    return false
+  }
+  is_NITK = (tok: IToken) => is_iden(tok) || is_type(tok) || is_num(tok)
+
+  get fcs() {
+    return this.focuses.focus!
+  }
+  type_str(type: SymbolType | any): string {
+    switch (type) {
+      case sym.NIL:
+        return typedef.Nil
+      case sym.INT:
+        return typedef.Int
+      case sym.ARRAY:
+        return typedef.Array
+    }
+
+    return typedef.Empty
+  }
+  exsit_in(item: any, ...arr: any[]): boolean {
+    return arr.findIndex((a) => a == item) != -1
+  }
+}

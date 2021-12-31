@@ -1,3 +1,4 @@
+export const IMP = 'imp'
 export const FUNCTION = 'function'
 export const IF = 'if'
 export const ELSE = 'else'

@@ -1,16 +1,2 @@
-  
-    function sajjad() returns Int:
-      val s1 = 'c';
-      val s2 = 'cc';
-      val somsmas = "cc";
-      val mas = "cc
-      ";
-      val sam = `
-      
-      ssdf sf sdfsdfsdf
-      sdf sdf sdf
-      cc
-      
-      `;
-    end
-
+imp "./2.tes"
+imp "./3.tes"

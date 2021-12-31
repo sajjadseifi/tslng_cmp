@@ -1,5 +1,5 @@
 import { Lex } from './lex'
-import { ILex, IPosition, IToken, TokenType } from './types'
+import { ILex, ILexProps, IPosition, IToken, TokenType } from './types'
 import { ILexer, ILexerAtomata } from './types/lexer'
 import { TokenError, TokenTypeError } from './types/type'
 import { keywords, patterns } from './constants'
@@ -14,8 +14,11 @@ export class Lexer implements ILexer, ILexerAtomata {
     this.lex = new Lex(fd, index)
     this.finished = false
   }
-  set_fd(fd: number, index: number = 0): void {
-    this.lex.set_fd(fd, index)
+  set_fd(plex: ILexProps): void {
+    this.lex.set_fd(plex.fd, plex.index)
+  }
+  get char_index() {
+    return this.lex.index
   }
   get pos(): IPosition {
     return this.lex.pos
@@ -106,7 +109,7 @@ export class Lexer implements ILexer, ILexerAtomata {
     const saved = lex.get_index
     const res: TokenError[] = []
 
-    while (counts-- > 0) res.push(this.next_token())
+    while (!lex.eof && counts-- > 0) res.push(this.next_token())
 
     lex.set_index(saved)
 
@@ -133,7 +136,9 @@ export class Lexer implements ILexer, ILexerAtomata {
       this.lex.get_char()
     }
     //not founded tokens
-    else tok_type = this.error13()
+    else {
+      tok_type = this.error13()
+    }
 
     //Lexer Error
     if (tok_type instanceof LexicalError) {
@@ -159,7 +164,7 @@ export class Lexer implements ILexer, ILexerAtomata {
     while (!this.lex.is_new_line) this.lex.get_char(false)
     //to back last char
     this.lex.un_get_char(false)
-    console.info('comment linear ignored...')
+    // console.info('comment linear ignored...')
   }
   comment_star(): void {
     //chek infinit time to find \n char
@@ -181,7 +186,7 @@ export class Lexer implements ILexer, ILexerAtomata {
     }
     //to back last char
     this.lex.un_get_char(false)
-    console.info('comment star ignored...')
+    // console.info('comment star ignored...')
   }
   num(): TokenType {
     this.lex.get_char()
@@ -224,6 +229,8 @@ export class Lexer implements ILexer, ILexerAtomata {
     this.lex.get_char()
     //
     switch (val) {
+      case keywords.IMP:
+        return TokenType.TOKEN_KEYWORD_IMP
       case keywords.FUNCTION:
         return TokenType.TOKEN_KEYWORD_FUNCTION
       case keywords.RETURNS:
@@ -345,5 +352,8 @@ export class Lexer implements ILexer, ILexerAtomata {
   }
   error13(): TokenTypeError {
     return new LexicalError('error 13 state machin')
+  }
+  clear(): void {
+    this.lex.clear()
   }
 }

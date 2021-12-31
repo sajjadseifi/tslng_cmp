@@ -1,5 +1,4 @@
-import { FD } from 'src/io'
-import { IPosition, IToken, LenOne, LenTow, TokenType, TokenTypeError } from '.'
+import { ILexProps, IPosition, TokenType, TokenTypeError } from '.'
 import { TokenError } from './type'
 
 export interface ILexer {
@@ -8,7 +7,9 @@ export interface ILexer {
   next_token(): TokenError
   follow(counts: number): TokenError[]
   get pos(): IPosition
-  set_fd(fd: FD, index: number): void
+  set_fd(plex: ILexProps): void
+  get char_index(): number
+  clear(): void
 }
 
 export interface ILexerAtomata {

@@ -1,9 +1,8 @@
 import { sym } from './constants'
-import { StatusIDEN } from './parser'
+import { StatusIDEN } from './parser/types'
 import { Sym } from './symbol'
 import { SymNulable } from './types'
 import { IFocuse, IFocusList } from './types/focus'
-
 export class Focuse implements IFocuse {
   constructor(public sym: SymNulable, public status: StatusIDEN) {}
   get is_free(): boolean {

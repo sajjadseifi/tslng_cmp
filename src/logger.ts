@@ -1,11 +1,12 @@
 import { IConfig } from './config'
 import { keywords, strs } from './constants'
-import { StatusIDEN } from './parser'
 import { ILogger, IPosition, ISymbol, IToken, SymbolType } from './types'
 import { IFocuse } from './types/focus'
 import { ILexer } from './types/lexer'
 import { type_str } from './utils/type-checking'
 import colors from 'colors/safe'
+import { StatusIDEN } from './parser/types'
+
 const incld_qute = (str: string = '', color: any) => {
   return `'${color(str)}'`
 }
@@ -25,6 +26,10 @@ export class Logger implements ILogger {
   private status: LoggerStatus
   constructor(public lexer: ILexer, public config: IConfig) {
     this.status = LoggerStatus.ANY
+  }
+  not_found_start_func(starter?: string): void {
+    const str = starter ?? this.config.app.start
+    this.semantic_err(`can not find '${str}' function to start program`)
   }
   type_mismatch_arg_func(
     arg_pos: number,

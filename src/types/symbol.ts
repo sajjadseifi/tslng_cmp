@@ -28,6 +28,7 @@ export interface ISymbol {
 export interface ISymbolTable {
   parrent?: ISymbolTable // if null this mean root
   symbols: ISymbol[]
+  get len(): number
   put(
     key: KeySymbol | undefined,
     type: SymbolType,

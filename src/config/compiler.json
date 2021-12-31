@@ -3,13 +3,16 @@
         "start":"main",
         "path":{
             "dir":"./example",
-            "file":"main.tes"
+            "file":"main.tes",
+            "suffix":".tes"
         }
     },
     "def":{
         "dir":"./src/builtin/def",
-        "file":"*"
+        "file":"*.htes"
     },
+    "full_path":"",
+    "base_route":".",
     "pck":{
         "dir":"./src/builtin/def",
         "file":"package.tson"
