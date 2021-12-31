@@ -28,6 +28,8 @@ export interface ICompiler {
   run(): void
 }
 
+const { POST_ORDER } = SearchMode
+
 export class Compiler {
   gm: IGraph<IModule>
   lexer!: ILexer
@@ -54,7 +56,7 @@ export class Compiler {
     //[pre compiling for founded modules and forward refrencing]
     await this.pre_compile()
     //[parse and then compilation]
-    // this.compile()
+    this.compile()
     //[do some thing after compilation]
     // this.post_compile()
   }
@@ -85,17 +87,27 @@ export class Compiler {
     this.parser.new_PME(DefParser, ParserMode.IMP, FileExtention.HTES)
     this.parser.new_PME(DefParser, ParserMode.IMP, FileExtention.TES)
     //pre parsing
-    this.parser.new_PME(AssParser, ParserMode.PRE, FileExtention.HTES)
+    // this.parser.new_PME(AssParser, ParserMode.PRE, FileExtention.HTES)
     this.parser.new_PME(TesParser, ParserMode.PRE, FileExtention.TES)
     //parsing
     this.parser.new_PME(HeadeParser, ParserMode.PARSE, FileExtention.HTES)
-    this.parser.new_PME(AssParser, ParserMode.PARSE, FileExtention.HTES)
+    // this.parser.new_PME(AssParser, ParserMode.PARSE, FileExtention.HTES)
     this.parser.new_PME(TesParser, ParserMode.PARSE, FileExtention.TES)
   }
-  parser_switching(modl: IModule): Nullable<SubParserTT> {
-    const key: KeyPME = { mod: modl.mode, ext: modl.path.suffix }
-    let _SP_: Nullable<SubParserTT> = this.parser.parsers.get(key)
-    console.log(_SP_, key)
+  parser_switching(node: IGraphNode<IModule>): Nullable<SubParserTT> {
+    let key: Nullable<KeyPME>
+    //got to next parser mode
+    let _SP_: Nullable<SubParserTT> = null
+    while (!node.value.is_finished) {
+      //got to next parser mode
+      node.value.next_mode()
+      //get SubParser type
+      key = { mod: node.value.mode, ext: node.value.path.suffix }
+      _SP_ = this.parser.parsers.get(key)
+      //out in while if exsit
+      if (_SP_) break
+    }
+
     return _SP_
   }
   //DFS
@@ -104,7 +116,7 @@ export class Compiler {
 
     root.visit()
     //load first module
-    await this.module_handler(root)
+    await this.async_module_handler(root)
 
     for (const node of root.children) {
       //Check the node if it was not visited
@@ -115,36 +127,36 @@ export class Compiler {
   }
   //
   async_module_handler: AsyncTraversalExcutor<IModule> = async (node) => {
-    if (node.value.is_post) return true
-    node.log()
     //opeining a file to start
-    if (node.value.is_imp) await this.load_file(node)
+    if (node.value.is_start) await this.load_file(node)
     //syncron oprations
     return this.module_handler(node)
   }
   module_handler: TraversalExcutor<IModule> = (node) => {
+    node.log()
+    console.log(node.value.complex, node.value.plex)
+    //
+    if (node.value.is_finished) return true
+    //completing level in lexer
+    this.cheack_and_complet(node)
     //seting node on parser layout for get symbols on childs import node
     this.parser.set_module_node(node)
     //run on mode seleted
-    const __SP__ = this.parser_switching(node.value)
+    const __SP__ = this.parser_switching(node)
     this.parser.execute(__SP__)
-    //got to next parser mode
-    node.value.next_mode()
     //undset parser
     this.parser.unset_module_node()
-    //completing level in lexer
-    this.cheack_and_complet(node.value)
     //if parser change mode of def to in_pre need to add new module
     //imports module must grater than zero
     this.importable_path(node)
-
+    //true for travel next node
     return true
   }
-  cheack_and_complet(modl: IModule): void {
-    //
-    if (modl.is_imp) modl.update_complex()
-    //
-    else if (modl.is_parse && modl.path.is_htes) modl.update_complex()
+  cheack_and_complet(node: IGraphNode<IModule>): void {
+    console.log(node.value.mode)
+    if (node.value.is_start) node.value.update_plex()
+    else if (node.value.is_imp) node.value.update_complex()
+    console.log('modl.plex', node.value.plex)
   }
   importable_path(parrent: IGraphNode<IModule>): void {
     const dir = parrent.value.path.dir
@@ -196,8 +208,8 @@ export class Compiler {
   }
   //
   compile() {
-    //read file
-    this.gm.traversal(SearchMode.POST_ORDER, this.module_handler)
+    //pre or parsing file
+    this.gm.traversal(POST_ORDER, this.module_handler)
   }
   //
   post_compile() {}

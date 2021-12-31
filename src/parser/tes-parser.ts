@@ -19,23 +19,22 @@ export class TesParser extends SubParser implements IParser, IParserRD {
   module: IModule
   constructor(public parser: Parser) {
     super(parser)
-    this.module = this.parser.module_node?.value!
+    this.module = this.parser.module_node!.value!
   }
   parse(): void {
-    throw new Error('Method not implemented.')
+    this.prog()
+    console.log(this.parser.lexer.finished)
+
+    //if is parse mode loged suggestion
+    if (this.module.is_parse) {
+      //root not used function decleared
+      this.parser.suggest.declared_and_not_used()
+      if (!this.parser.can_run) {
+        this.parser.logger.not_found_start_func()
+      }
+    }
   }
   prog(): void {
-    if (this.parser.lexer.finished) {
-      //if level of compiler is
-      if (this.module.is_parse) {
-        //root not used function decleared
-        this.parser.suggest.declared_and_not_used()
-        if (this.parser.can_run === false)
-          this.parser.logger.not_found_start_func()
-      }
-      return
-    }
-
     //init function
     this.func()
     //re call prog
@@ -46,9 +45,11 @@ export class TesParser extends SubParser implements IParser, IParserRD {
     let fcname
     let prmc = -1
     let type = sym.EMPTY
-    this.parser.ec.function_start()
     //after function
     let tok = this.parser.first_follow
+
+    this.parser.ec.function_start()
+
     fcname = this.parser.ec.function_in_iden()!
     //create function symbol node
     let symnode: ISymbol = new Sym(fcname)
@@ -60,6 +61,7 @@ export class TesParser extends SubParser implements IParser, IParserRD {
       this.parser.can_run = true
       symnode.used()
     }
+
     //check exsit in symbol table and show semantic error
     if (fcname && this.parser.crntstbl.exist(fcname)) {
       this.parser.logger.is_decleared(fcname)
@@ -177,6 +179,7 @@ export class TesParser extends SubParser implements IParser, IParserRD {
   foreach_stmt(scop: number) {
     //foreach keyword ignored
     this.parser.next()
+    console.log('sahhad')
 
     this.parser.capsolate('(', ')', this.iden_of_expr, false)
 
@@ -194,7 +197,7 @@ export class TesParser extends SubParser implements IParser, IParserRD {
     }
   }
   iden_of_expr() {
-    const [tok] = this.parser.follow(1)
+    const tok = this.parser.first_follow
     //error hndleing
 
     if (tokChecker.is_keyword(tok)) {
@@ -228,6 +231,8 @@ export class TesParser extends SubParser implements IParser, IParserRD {
       }
       this.parser.ec.foreach_after_iden(tok)
     }
+
+    return true
   }
 
   defvar(): boolean {

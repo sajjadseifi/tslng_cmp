@@ -38,6 +38,7 @@ export class Parser implements IParserBase {
   imports: string[]
   error: boolean
   parsers: PME
+  parser: Nullable<SubParser>
   constructor(
     public lexer: ILexer,
     public config: IConfig,
@@ -55,6 +56,7 @@ export class Parser implements IParserBase {
     this.error = false
     this.imports = []
     this.parsers = new PME()
+    // this.loging_lexer()
   }
   get imp_mods() {
     return this.module_node?.children! || []
@@ -66,9 +68,9 @@ export class Parser implements IParserBase {
   execute(__SP__?: Nullable<SubParserTT>): void {
     if (is_null(__SP__)) return
 
-    const parser = new __SP__!(this)
+    this.parser = new __SP__!(this)
 
-    parser.parse()
+    this.parser.parse()
   }
   private get mod_tbls() {
     return this.imp_mods.map((mn) => mn.value.symbols) || []
@@ -108,6 +110,7 @@ export class Parser implements IParserBase {
   }
   unset_module_node(): void {
     const modl = this.module_node!.value
+
     modl.set_plex(modl.plex.fd, this.lexer.char_index)
     this.module_node = undefined
   }
@@ -178,9 +181,8 @@ export class Parser implements IParserBase {
       this.next()
       return false
     }
-    if (show_err) {
-      this.logger.capsolate_syntax_err(exp, open)
-    }
+    //
+    if (show_err) this.logger.capsolate_syntax_err(exp, open)
 
     return strict
   }
@@ -191,7 +193,7 @@ export class Parser implements IParserBase {
     strict: boolean = true,
     show_err?: boolean
   ): boolean => {
-    const cb = callback.bind(this)
+    const cb = callback.bind(this.parser)
     //left open capsolate
     if (this.side_capsolate(left, strict, true, show_err)) return false
     //center state run

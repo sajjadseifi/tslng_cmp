@@ -10,10 +10,12 @@ export interface IModule {
   complex: ILexProps
   path: IPath
   mode: ParserMode
+  get is_start(): boolean
   get is_imp(): boolean
   get is_pre(): boolean
   get is_parse(): boolean
   get is_post(): boolean
+  get is_finished(): boolean
   update_plex(): void
   update_complex(): void
   set_complex(fd: FD, index: number): void
@@ -27,7 +29,10 @@ export class Module implements IModule {
   symbols: ISymbolTable
   plex!: ILexProps
   complex!: ILexProps
-  constructor(public path: IPath, public mode: ParserMode = ParserMode.IMP) {
+  constructor(
+    public path: IPath, //
+    public mode: ParserMode = ParserMode.SRART
+  ) {
     this.symbols = new SymbolTable()
     this.set_complex(-1, -1)
     this.update_plex()
@@ -50,23 +55,24 @@ export class Module implements IModule {
   }
 
   next_mode(): void {
-    const nxt = this.mode + 1
-    if (nxt < ParserMode.END) {
-      this.mode = nxt
-    }
+    if (this.mode < ParserMode.FINISHED) this.mode++
   }
   prev_mode(): void {
-    const prv = this.mode - 1
-    if (prv > ParserMode.IMP) {
-      this.mode = prv
-    }
+    if (this.mode > ParserMode.SRART) this.mode--
   }
-
+  /*  */
+  start = () => this.set_mode(ParserMode.SRART)
   imp = () => this.set_mode(ParserMode.IMP)
   pre = () => this.set_mode(ParserMode.PRE)
   parse = () => this.set_mode(ParserMode.PARSE)
   post = () => this.set_mode(ParserMode.POST)
-
+  /*  */
+  get is_start(): boolean {
+    return this.mode === ParserMode.SRART
+  }
+  get is_finished(): boolean {
+    return this.mode === ParserMode.FINISHED
+  }
   get is_imp(): boolean {
     return this.mode === ParserMode.IMP
   }

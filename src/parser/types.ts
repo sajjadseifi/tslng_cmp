@@ -13,11 +13,12 @@ export enum StatusIDEN {
   FOREACH
 }
 export enum ParserMode {
+  SRART,
   IMP, //import module
   PRE, //pre parse
   PARSE, //during parse
   POST, //post parse
-  END //post parse
+  FINISHED //post parse
 }
 
 export interface IParser {

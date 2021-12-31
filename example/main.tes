@@ -12,7 +12,7 @@ function find(Array A,Int x) returns Int:
             i = i + 1;
     end
     return -1;
-
+end
 function man() returns Int:
     val Array A;
     val Int a;
