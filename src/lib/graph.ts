@@ -216,9 +216,9 @@ export class Graph<T> implements IGraph<T> {
   rm(node: IGraphNode<T>): Nullable<IGraphNode<T>> {
     const _node = this.search(node)
 
-    if (_node === null) return null
+    if (_node) return this.rm_by_key(_node.key)
 
-    return this.rm_by_key(_node.key)
+    return null
   }
   rm_by_key(key: Key): Nullable<IGraphNode<T>> {
     const node = this.search_by_key(key)

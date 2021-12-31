@@ -3,26 +3,27 @@ import { ConfigurManagemnt, _defalut } from './config'
 import { ILexer } from './types/lexer'
 import { Lexer } from './lexer'
 import { Parser } from './parser'
-import { FD, read_async } from './io'
+import { read_async } from './io'
 import { ILogger, ISymbolTable, Nullable } from './types'
 import { Logger } from './logger'
 import { SymbolTable } from './symbol'
 import { ISuggestion, Suggestion } from './suggestion'
 import { IModule, Module } from './graph-module'
-import { AsyncTraversalExcutor, Graph, IGraph, IGraphNode } from './lib/graph'
+import {
+  AsyncTraversalExcutor,
+  Graph,
+  IGraph,
+  IGraphNode,
+  SearchMode,
+  TraversalExcutor
+} from './lib/graph'
 import { FileExtention, IPathTes, Path, PathTes } from './lib/path'
 import { zero } from './utils'
-import {
-  IParserBase,
-  KeyPME,
-  ParserMode,
-  SubParser,
-  SubParserTT
-} from './parser/types'
+import { IParserBase, KeyPME, ParserMode, SubParserTT } from './parser/types'
 import { TesParser } from './parser/tes-parser'
 import { DefParser } from './parser/def-parser'
 import { AssParser } from './parser/ass-parser'
-import { HeaderParser } from './header-parser'
+import { HeadeParser } from './parser/head-parser'
 export interface ICompiler {
   run(): void
 }
@@ -48,7 +49,8 @@ export class Compiler {
     //[init configure]
     this.congigure.init()
     //[start compiler]
-    this.init()
+    this.build()
+    this.init_pmes()
     //[pre compiling for founded modules and forward refrencing]
     await this.pre_compile()
     //[parse and then compilation]
@@ -69,32 +71,32 @@ export class Compiler {
       return fd
     }
   }
-  parser_switching(modl: IModule): Nullable<SubParserTT> {
-    const key: KeyPME = { mod: modl.mode, ext: modl.path.suffix }
-    let _SP_: Nullable<SubParserTT> = this.parser.parsers.get_with_check(
-      key,
-      (p) => {
-        return false
-      }
-    )
-    return _SP_
-  }
-  init() {
+  build() {
     const cnf = this.congigure.config
-    const { lexer: l, logger: lg, suggest: sg, root: r } = this
     this.lexer = new Lexer(-1, -1)
+    const { lexer: l } = this
     this.logger = new Logger(l, cnf)
     //init parser
+    const { logger: lg, suggest: sg, root: r } = this
     this.parser = new Parser(l, cnf, lg, sg, r)
+  }
+  init_pmes(): void {
     //import pars
     this.parser.new_PME(DefParser, ParserMode.IMP, FileExtention.HTES)
     this.parser.new_PME(DefParser, ParserMode.IMP, FileExtention.TES)
     //pre parsing
+    this.parser.new_PME(AssParser, ParserMode.PRE, FileExtention.HTES)
     this.parser.new_PME(TesParser, ParserMode.PRE, FileExtention.TES)
     //parsing
-    this.parser.new_PME(HeaderParser, ParserMode.PARSE, FileExtention.HTES)
+    this.parser.new_PME(HeadeParser, ParserMode.PARSE, FileExtention.HTES)
     this.parser.new_PME(AssParser, ParserMode.PARSE, FileExtention.HTES)
     this.parser.new_PME(TesParser, ParserMode.PARSE, FileExtention.TES)
+  }
+  parser_switching(modl: IModule): Nullable<SubParserTT> {
+    const key: KeyPME = { mod: modl.mode, ext: modl.path.suffix }
+    let _SP_: Nullable<SubParserTT> = this.parser.parsers.get(key)
+    console.log(_SP_, key)
+    return _SP_
   }
   //DFS
   async load_mods_dfs(root: IGraphNode<IModule>): Promise<void> {
@@ -112,15 +114,22 @@ export class Compiler {
     }
   }
   //
-  module_handler: AsyncTraversalExcutor<IModule> = async (node) => {
+  async_module_handler: AsyncTraversalExcutor<IModule> = async (node) => {
+    if (node.value.is_post) return true
     node.log()
     //opeining a file to start
     if (node.value.is_imp) await this.load_file(node)
+    //syncron oprations
+    return this.module_handler(node)
+  }
+  module_handler: TraversalExcutor<IModule> = (node) => {
     //seting node on parser layout for get symbols on childs import node
     this.parser.set_module_node(node)
     //run on mode seleted
     const __SP__ = this.parser_switching(node.value)
     this.parser.execute(__SP__)
+    //got to next parser mode
+    node.value.next_mode()
     //undset parser
     this.parser.unset_module_node()
     //completing level in lexer
@@ -128,12 +137,6 @@ export class Compiler {
     //if parser change mode of def to in_pre need to add new module
     //imports module must grater than zero
     this.importable_path(node)
-    //
-    if (node.value.is_pre && !zero(this.parser.imports.length)) {
-      this.init_multi_module(this.parser.imports, node)
-    }
-    //clear imports modules
-    if (!zero(this.parser.imports)) this.parser.imports = []
 
     return true
   }
@@ -149,8 +152,13 @@ export class Compiler {
     const pather = (file_name: string) => {
       return path.normalize(path.join(dir, new Path(file_name).file))
     }
-    //change path
+    //change to full path
     this.parser.imports = imps.map((imp) => pather(imp))
+    //init if grater then 1
+    if (parrent.value.is_imp && !zero(this.parser.imports.length))
+      this.init_multi_module(this.parser.imports, parrent)
+    //clear imports modules
+    if (!zero(this.parser.imports)) this.parser.imports = []
   }
   init_module(path: string, root: Nullable<IGraphNode<IModule>>) {
     const _pth = new Path(path)
@@ -183,23 +191,13 @@ export class Compiler {
     const root = this.init_graph_modules()
     //add buildint modules to graph-module
     this.builtin_mod(root!)
-    //open loging
     //[loading all tree file in to graph & then pruning]
     await this.load_mods_dfs(root!)
-    //TODO add builtin to symbol
-    //built in functions
-    // const tbl = this.root
-    // tbl.builtin('getInt', sym.INT)
-    // tbl.builtin('printInt', sym.NIL, ['n'], [sym.INT])
-    // tbl.builtin('createArray', sym.ARRAY, ['n'], [sym.INT])
-    // tbl.builtin('arrayLength', sym.INT, ['n'], [sym.INT])
-    // tbl.builtin('arrayLength', sym.NIL, ['n'], [sym.INT])
-    // tbl.used_all()
-    //TODO init graph modules of dir
   }
   //
   compile() {
-    // this.parser.run()
+    //read file
+    this.gm.traversal(SearchMode.POST_ORDER, this.module_handler)
   }
   //
   post_compile() {}

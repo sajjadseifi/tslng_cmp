@@ -1,4 +1,4 @@
-import { FileExtention } from 'src/lib/path'
+import { FileExtention } from '../lib/path'
 import { IModule } from '../graph-module'
 import { IGraphNode } from '../lib/graph'
 import { IRunner, ISymbolTable, IToken, Nullable, SymbolType } from '../types'
@@ -16,7 +16,8 @@ export enum ParserMode {
   IMP, //import module
   PRE, //pre parse
   PARSE, //during parse
-  POST //post parse
+  POST, //post parse
+  END //post parse
 }
 
 export interface IParser {

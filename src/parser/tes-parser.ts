@@ -13,7 +13,7 @@ import {
 import { same_type } from '../utils/type-checking'
 import { IParser, IParserRD, SubParser } from './types'
 import { Parser } from './parser'
-import { IModule } from 'src/graph-module'
+import { IModule } from '../graph-module'
 
 export class TesParser extends SubParser implements IParser, IParserRD {
   module: IModule

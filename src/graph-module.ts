@@ -18,11 +18,9 @@ export interface IModule {
   update_complex(): void
   set_complex(fd: FD, index: number): void
   set_plex(fd: FD, index: number): void
-  set_mod: (mode: ParserMode) => ParserMode
-  imp: () => ParserMode
-  pre: () => ParserMode
-  parse: () => ParserMode
-  post: () => ParserMode
+  set_mode: (mode: ParserMode) => void
+  next_mode(): void
+  prev_mode(): void
 }
 
 export class Module implements IModule {
@@ -47,15 +45,27 @@ export class Module implements IModule {
   update_plex(): void {
     this.plex = this.complex
   }
-  set_mod = (mode: ParserMode) => (this.mode = mode)
+  set_mode(mode: ParserMode) {
+    this.mode = mode
+  }
 
-  imp = () => this.set_mod(ParserMode.IMP)
+  next_mode(): void {
+    const nxt = this.mode + 1
+    if (nxt < ParserMode.END) {
+      this.mode = nxt
+    }
+  }
+  prev_mode(): void {
+    const prv = this.mode - 1
+    if (prv > ParserMode.IMP) {
+      this.mode = prv
+    }
+  }
 
-  pre = () => this.set_mod(ParserMode.PRE)
-
-  parse = () => this.set_mod(ParserMode.PARSE)
-
-  post = () => this.set_mod(ParserMode.POST)
+  imp = () => this.set_mode(ParserMode.IMP)
+  pre = () => this.set_mode(ParserMode.PRE)
+  parse = () => this.set_mode(ParserMode.PARSE)
+  post = () => this.set_mode(ParserMode.POST)
 
   get is_imp(): boolean {
     return this.mode === ParserMode.IMP

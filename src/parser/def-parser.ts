@@ -1,10 +1,10 @@
-import { keywords } from 'src/constants'
-import { imp_or_mod, is_imp, is_str } from 'src/utils/token-cheker'
+import { keywords } from '../constants'
+import { imp_or_mod, is_imp, is_str } from '../utils/token-cheker'
 import { IParser, SubParser } from './types'
 
 export class DefParser extends SubParser implements IParser {
   parse(): void {
-    throw new Error('Method not implemented.')
+    this.import()
   }
   // import :=  |
   //         imp "module"

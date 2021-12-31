@@ -5,8 +5,8 @@
 // export type CType = IdenStr
 // export type FType = [IdenStr, TypeStr]
 
-import { IModule } from 'src/graph-module'
-import { IGraphNode } from 'src/lib/graph'
+import { IModule } from '../graph-module'
+import { IGraphNode } from '../lib/graph'
 import { ISymbolTable, IToken, SymbolType } from '.'
 export type EpxrType = SymbolType | -1
 export type Scop = string | number

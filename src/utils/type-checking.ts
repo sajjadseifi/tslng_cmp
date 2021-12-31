@@ -1,4 +1,4 @@
-import { SymbolType } from 'src/types'
+import { SymbolType } from '../types'
 import { sym, typedef } from '../constants'
 import { EpxrType } from '../types/parser'
 

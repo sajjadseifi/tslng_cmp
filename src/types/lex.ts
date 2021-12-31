@@ -1,4 +1,4 @@
-import { FD } from 'src/io'
+import { FD } from '../io'
 import { IPosition } from '.'
 
 export interface ILexProps {

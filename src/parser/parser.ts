@@ -23,7 +23,7 @@ import { IConfig } from '../config'
 import { IGraphNode } from '../lib/graph'
 import { IModule } from '../graph-module'
 import { ParserMode, IParserBase, SubParser, SubParserTT } from './types'
-import { FileExtention } from 'src/lib/path'
+import { FileExtention } from '../lib/path'
 import { PME } from './PME'
 
 export class Parser implements IParserBase {

@@ -1,5 +1,5 @@
-import { FileExtention } from 'src/lib/path'
-import { Nullable } from 'src/types'
+import { FileExtention } from '../lib/path'
+import { Nullable } from '../types'
 import { IPME, KeyPME, ParserMode, SubParserTT } from './types'
 
 export class PME {
@@ -23,10 +23,10 @@ export class PME {
 
     return exist
   }
-  get(key: KeyPME): IPME | undefined {
+  get(key: KeyPME): Nullable<SubParserTT> {
     const { ext, mod } = key
 
-    return this.pmes.find(this.same_key(mod, ext))
+    return this.pmes.find(this.same_key(mod, ext))?.parser
   }
   get_with_check(
     key: KeyPME,
