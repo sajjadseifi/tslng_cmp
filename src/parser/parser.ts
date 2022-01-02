@@ -69,12 +69,11 @@ export class Parser implements IParserBase {
       []
     )
   }
-  execute(__SP__?: Nullable<SubParserTT>): void {
+  execute(__SP__?: Nullable<SubParser>): void {
     if (is_null(__SP__)) return
-    this.parser = new __SP__!(this)
 
     try {
-      this.parser.parse()
+      __SP__?.parse()
     } catch (err) {
       console.log(err)
       // console.log('err catch parseer')

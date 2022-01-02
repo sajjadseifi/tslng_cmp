@@ -25,9 +25,12 @@ import { IParserGenerator, ParserGenerator } from './parser-generator'
 export interface ICompiler {
   run(): void
 }
+export interface SharedCompier {
+  parser: IParserBase
+}
 
 const { POST_ORDER } = SearchMode
-export class Compiler {
+export class Compiler implements ICompiler, SharedCompier {
   gm: IGraph<IModule>
   lexer!: ILexer
   parser!: IParserBase
@@ -137,7 +140,9 @@ export class Compiler {
     this.switcher.switching(node)
     console.log(colors.green(`:: ${strble_mode_parse[node.value.mode]} ::`))
     node.log()
-    this.parser.execute(this.switcher.parser)
+    const SPT = this.switcher.parser
+    const SP = SPT ? new SPT(this) : undefined
+    this.parser.execute(SP)
     //resposne after parser executatuon
     this.checking_after_mode_travel(node)
     //undset parser

@@ -1,7 +1,7 @@
-import { Compiler } from './compiler'
+import { Compiler, ICompiler } from './compiler'
 
 export const main = () => {
-  const compiler = new Compiler()
+  const compiler: ICompiler = new Compiler()
   compiler.run()
 }
 

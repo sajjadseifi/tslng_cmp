@@ -13,6 +13,7 @@ import {
 import { EpxrType } from '../types/parser'
 import { Parser } from './parser'
 import { PME } from './PME'
+import { Compiler, SharedCompier } from 'src/compiler'
 
 export enum StatusIDEN {
   FREE,
@@ -42,7 +43,10 @@ export interface IParser {
 }
 
 export class SubParser implements IParser {
-  constructor(public parser: Parser) {}
+  parser: Parser
+  constructor(compiler: SharedCompier) {
+    this.parser = compiler.parser as Parser
+  }
   parse(): void {
     throw new Error('You Need Impliments Parse Method In Child Of SubParser.')
   }
@@ -70,7 +74,7 @@ export interface IPME {
 }
 //base root of parser
 export interface IParserBase {
-  execute(__SP__?: Nullable<SubParserTT>, status?: ParserStatuses): void
+  execute(__SP__?: Nullable<SubParser>, status?: ParserStatuses): void
   set_module_node(node: IGraphNode<IModule>): void
   unset_module_node(): void
   set_symbols(symbols: ISymbolTable): void
