@@ -27,4 +27,7 @@ export class ConfigurManagemnt {
   get app_path() {
     return this.tpath.path_to_str(this.config.app.path, true)
   }
+  is_start(func_name: String) {
+    return func_name === this.config.app.start
+  }
 }

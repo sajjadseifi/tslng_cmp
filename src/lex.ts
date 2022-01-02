@@ -25,11 +25,12 @@ export class Lex implements ILex {
     this.tmp = ''
     this.line_number = 0
   }
-  set_fd(fd: FD, index: number) {
+  set_fd(fd: FD, index: number = -1) {
     this.fd = fd
     this.index = index
   }
   set_index(index: number) {
+    this.clear_chars()
     if (this.index == index) return
 
     if (index > this.index) {
@@ -37,7 +38,7 @@ export class Lex implements ILex {
         this.get_char(false)
       }
     } else {
-      while (!this.begin && index < this.index) {
+      while (this.index > -1 && index < this.index) {
         this.un_get_char(false)
       }
     }
@@ -69,12 +70,13 @@ export class Lex implements ILex {
   }
 
   un_get_char(use_tmp = true): void {
-    if (this.index < 1) {
+    if (this.begin) {
       this.index = -1
       return this.clear_chars()
+    } else {
+      //
+      this.index--
     }
-    //
-    this.index--
     //
     this.update_ch()
     //

@@ -1,12 +1,20 @@
-import { IPosition, ISymbol, IToken, SymbolType } from '.'
-import { IFocuse } from './focus'
-
+import { IModule } from 'src/graph-module'
+import { IPosition, IToken, SymbolType } from '.'
+export interface LogingAquiredStatus {
+  warning: boolean
+  syntax: boolean
+  semantic: boolean
+  error: boolean
+}
 export interface ILogger {
+  set_loging_status(stts?: Partial<LogingAquiredStatus>): void
+  reset(): void
+  set_module(modl: IModule): void
   log(message: string): void
-  warining(message: string, pos?: IPosition): void
-  log_with_line(message: string, pos?: IPosition): void
-  syntax_err(message: string, pos?: IPosition): void
-  semantic_err(message: string, pos?: IPosition): void
+  warining(message: string, pos?: IPosition, strict?: boolean): void
+  log_with_line(message: string, pos?: IPosition, strict?: boolean): void
+  syntax_err(message: string, pos?: IPosition, strict?: boolean): void
+  semantic_err(message: string, pos?: IPosition, strict?: boolean): void
   not_defind(iden: string): void
   wrong_type_arg(iden: string, arg_index: number): void
   expected_arg(iden: string, expected: number, given: number): void
@@ -35,4 +43,6 @@ export interface ILogger {
   ): void
   arg_empty_call(pos: number): void
   not_found_start_func(starter?: string): void
+  word_not_iden(word: string): void
+  expect_sem_error(): void
 }

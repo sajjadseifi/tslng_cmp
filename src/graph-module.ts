@@ -4,6 +4,7 @@ import { ParserMode } from './parser/types'
 import { SymbolTable } from './symbol'
 import { ILexProps, ISymbolTable } from './types'
 
+export interface Iloging {}
 export interface IModule {
   symbols: ISymbolTable
   plex: ILexProps
@@ -23,9 +24,10 @@ export interface IModule {
   set_mode: (mode: ParserMode) => void
   next_mode(): void
   prev_mode(): void
+  log(): string
 }
 
-export class Module implements IModule {
+export class Module implements IModule, Iloging {
   symbols: ISymbolTable
   plex!: ILexProps
   complex!: ILexProps
@@ -36,6 +38,9 @@ export class Module implements IModule {
     this.symbols = new SymbolTable()
     this.set_complex(-1, -1)
     this.update_plex()
+  }
+  log(): string {
+    return `${this.mode}`
   }
 
   set_complex(fd: number, index: number): void {

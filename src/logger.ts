@@ -1,35 +1,137 @@
 import { IConfig } from './config'
 import { keywords, strs } from './constants'
-import { ILogger, IPosition, ISymbol, IToken, SymbolType } from './types'
+import {
+  ILogger,
+  IPosition,
+  ISymbol,
+  IToken,
+  LogingAquiredStatus,
+  Nullable,
+  SymbolType
+} from './types'
 import { IFocuse } from './types/focus'
 import { ILexer } from './types/lexer'
 import { type_str } from './utils/type-checking'
 import colors from 'colors/safe'
 import { StatusIDEN } from './parser/types'
+import { IModule } from './graph-module'
+import { IPath, IPathTes } from './lib/path'
 
-const incld_qute = (str: string = '', color: any) => {
+const includ_qute = (str: string = '', color: any) => {
   return `'${color(str)}'`
 }
-const type_qute = (str: string) => incld_qute(str, colors.cyan)
-const iden_qute = (str: string) => incld_qute(str, colors.yellow)
-const kword_qute = (str: string) => incld_qute(str, colors.magenta)
-const num_qute = (num: any) => incld_qute(num, colors.yellow)
+export const type_qute = (str: string) => includ_qute(str, colors.cyan)
+export const iden_qute = (str: string) => includ_qute(str, colors.yellow)
+export const kword_qute = (str: string) => includ_qute(str, colors.magenta)
+export const num_qute = (num: any) => includ_qute(num, colors.yellow)
 
 export enum LoggerStatus {
+  RESET,
   ANY,
   ERROR,
   WARNINIG,
   SYNTAX,
   SEMANTIC
 }
+function get_ok_log(visiblity: Partial<LogingAquiredStatus>, prp_key: string) {
+  switch (prp_key) {
+    case 'syntax_err':
+      return visiblity?.syntax!
+    case 'semantic_err':
+      return visiblity?.semantic!
+    case 'warining':
+      return visiblity?.warning
+    case 'error':
+      return visiblity?.error
+  }
+  return true
+}
 export class Logger implements ILogger {
   private status: LoggerStatus
-  constructor(public lexer: ILexer, public config: IConfig) {
-    this.status = LoggerStatus.ANY
+  private visiblity!: Partial<LogingAquiredStatus>
+  constructor(
+    public lexer: ILexer,
+    public config: IConfig,
+    public path: IPathTes,
+    public modl?: Nullable<IModule>
+  ) {
+    this.status = LoggerStatus.RESET
+  }
+  expect_sem_error(): void {
+    this.syntax_err('expected ; after expersion')
+  }
+  set_loging_status(stts?: Partial<LogingAquiredStatus>): void {
+    this.visiblity = stts!
+  }
+  reset(): void {
+    this.status = LoggerStatus.RESET
+  }
+  set_module(modl: IModule): void {
+    this.modl = modl
+  }
+  private title_with_status(
+    title: string,
+    status: LoggerStatus,
+    color: any,
+    message: string,
+    pos?: IPosition
+  ) {
+    const t = `:: ${title} ::`
+    const spase = this.space(t.length)
+    if (this.status !== status) {
+      this.title_log(3, t, color)
+    }
+
+    this.log_with_line(`${spase}${message}`, pos)
+    this.status = status
+  }
+  syntax_err(message: string, pos?: IPosition, strict: boolean = false): void {
+    this.title_with_status(
+      strs.syntax_error, //
+      LoggerStatus.SYNTAX, //
+      colors.cyan, //
+      message, //
+      pos //
+    )
+  }
+  semantic_err(
+    message: string,
+    pos?: IPosition,
+    strict: boolean = false
+  ): void {
+    this.title_with_status(
+      strs.semantic, //
+      LoggerStatus.SEMANTIC, //
+      colors.red, //
+      message, //
+      pos //
+    )
+  }
+  warining(message: string, pos?: IPosition, strict: boolean = false): void {
+    this.title_with_status(
+      strs.warning, //
+      LoggerStatus.WARNINIG, //
+      colors.yellow, //
+      message, //
+      pos //
+    )
+  }
+  error(message: string, pos?: IPosition, strict: boolean = false): void {
+    this.title_with_status(
+      strs.error, //
+      LoggerStatus.ERROR, //
+      colors.red, //
+      message, //
+      pos //
+    )
+  }
+  word_not_iden(word: string): void {
+    this.syntax_err(`name ${iden_qute(word)} dont identifier'`)
   }
   not_found_start_func(starter?: string): void {
     const str = starter ?? this.config.app.start
-    this.semantic_err(`can not find '${str}' function to start program`)
+    const idc = iden_qute(str)
+    this.semantic_err(`can not find ${idc} function to start program`)
   }
   type_mismatch_arg_func(
     arg_pos: number,
@@ -37,33 +139,35 @@ export class Logger implements ILogger {
     bad_type: SymbolType,
     correct_type: SymbolType
   ): void {
-    const f_incld = iden_qute(func_name)
+    const fcc = iden_qute(func_name)
     const bt = type_qute(type_str(bad_type))
     const ct = type_qute(type_str(correct_type))
+    const ap = num_qute(arg_pos)
     this.semantic_err(
-      `mismatch type arg(${arg_pos}) of ${f_incld} is not ${bt} must be ${ct}`
+      `mismatch type, arg ${ap} of ${fcc} not ${bt} must be ${ct}`
     )
   }
   arg_empty_call(pos: number): void {
-    this.syntax_err(`empty at position ${pos} of arg call function`)
+    const posc = num_qute(pos)
+    this.syntax_err(`empty at position ${posc} of arg call function`)
   }
 
   declared_and_not_used(symbl: ISymbol, focuse: IFocuse | null): void {
     let str
-    if (focuse && focuse.status === StatusIDEN.FOREACH) {
+    //
+    if (focuse && focuse.status === StatusIDEN.FOREACH)
       str = `${keywords.FOREACH} identifier`
-    } else if (symbl.is_func) {
-      str = keywords.FUNCTION
-    } else {
-      str = keywords.VAL
-    }
+    //
+    else if (symbl.is_func) str = keywords.FUNCTION
+    //
+    else str = keywords.VAL
+    //
+    const idc = iden_qute(symbl.key as string)
 
-    this.warn_with_pos(
-      symbl.position,
-      `${str} '${symbl.key}' is declared but not used`
-    )
+    const msg = `${kword_qute(str)} ${idc} is declared but not used`
+    //
+    this.warining(msg, symbl.position)
   }
-
   identifier_not_array(tok: string | IToken): void {
     const iden = iden_qute(typeof tok === 'string' ? tok : tok.val!)
     const arr_type = type_qute('Array')
@@ -78,18 +182,17 @@ export class Logger implements ILogger {
     throw new Error('Method not implemented.')
   }
   type_of_array_index(tok: string, type: string): void {
+    const idc = iden_qute(tok)
+    const typc = type_qute(type)
     this.log_with_line(
-      `index of Array ${iden_qute(
-        tok
-      )} should be in type Int can not ${type_qute(type)}`
+      `index of Array ${idc} should be in type Int can not ${typc}`
     )
   }
   arg_defined_last(key: any, index: any, type: any): void {
-    this.syntax_err(
-      `arg ${iden_qute(key)} defined at ${index} postion by type ${type_qute(
-        type
-      )}`
-    )
+    const idc = iden_qute(key)
+    const typc = type_qute(type)
+    const indc = num_qute(index)
+    this.syntax_err(`arg ${idc} defined at ${indc} postion by type ${typc}`)
   }
   type_ret_err(): void {
     return this.syntax_err('reutrn type must one of (Array,Int,Nil) type')
@@ -108,84 +211,33 @@ export class Logger implements ILogger {
     this.illegal_error(`illegal keyword  token ${kword_qute(keyword)} in place`)
   }
   capsolate_syntax_err(tok: string, open: boolean): void {
-    this.syntax_err(
-      `you shude be ${
-        open ? 'open' : 'close'
-      } the capsolate expersion with ${kword_qute(tok)}`
-    )
+    const opc = open ? 'open' : 'close'
+    const kto = kword_qute(tok)
+    this.syntax_err(`you shude be ${opc} the capsolate expersion with ${kto}`)
   }
   block_opcl_err(open: boolean = true, token: string): void {
-    this.syntax_err(
-      `you need to ${open ? 'open' : 'close'} block near token ${iden_qute(
-        token
-      )} with ${open ? kword_qute(':') : kword_qute('end')}`
-    )
+    const opc = open ? 'open' : 'close'
+    const idq = iden_qute(token)
+    const blk = open ? kword_qute(':') : kword_qute('end')
+
+    this.syntax_err(`you need to ${opc} block near token ${idq} with ${blk}`)
   }
   type_invalid_err(token: IToken): void {
-    this.syntax_err(`invalid type ${token} valid type is (Array,Nil,Int)`)
+    const tc = type_qute(token.val!)
+    this.syntax_err(`invalid type ${tc} valid type is (Array,Nil,Int)`)
   }
   correct_word_place(token: IToken, word: string): void {
-    return this.syntax_err(
-      `near token ${iden_qute(token.val!)} mus be '${kword_qute(word)}'`
-    )
+    if (!token || !token.val) return
+
+    const kc = kword_qute(word)
+    const ic = iden_qute(token.val!)
+    return this.syntax_err(`near token ${ic} mus be ${kc}`)
   }
   is_decleared(token: string): void {
     this.syntax_err(`identifier ${iden_qute(token)} is decleard.`)
   }
   private space = (counts: number) => [...Array(counts)].map(() => ' ').join('')
-  private title_with_status(
-    title: string,
-    status: LoggerStatus,
-    color: any,
-    message: string,
-    pos?: IPosition
-  ) {
-    const t = `:: ${title} ::`
-    const spase = this.space(t.length)
 
-    if (this.status !== status) {
-      this.title_log(3, t, color)
-    }
-
-    this.log_with_line(`${spase}${message}`, pos)
-    this.status = status
-  }
-  syntax_err(message: string, pos?: IPosition): void {
-    this.title_with_status(
-      strs.syntax_error, //
-      LoggerStatus.SYNTAX, //
-      colors.cyan, //
-      message, //
-      pos //
-    )
-  }
-  semantic_err(message: string, pos?: IPosition): void {
-    this.title_with_status(
-      strs.semantic, //
-      LoggerStatus.SEMANTIC, //
-      colors.red, //
-      message, //
-      pos //
-    )
-  }
-  warining(message: string, pos?: IPosition): void {
-    this.title_with_status(
-      strs.warning, //
-      LoggerStatus.WARNINIG, //
-      colors.yellow, //
-      message, //
-      pos //
-    )
-  }
-  error(message: string, pos?: IPosition): void {
-    this.title_with_status(
-      strs.error, //
-      LoggerStatus.ERROR, //
-      colors.red, //
-      message, //
-      pos //
-    )
-  }
   not_found_module(module: string) {
     const lprn = colors.magenta('(')
     const rprn = colors.magenta(')')
@@ -207,50 +259,45 @@ export class Logger implements ILogger {
   exit_logline(message: string): -1 {
     return -1
   }
-
   log(message: string): void {
     console.log(message)
   }
-
   log_with_line(message: string, _pos?: IPosition): void {
+    if (!this.modl) return
+
     const pos = _pos ?? this.lexer?.pos
     const lprn = colors.magenta('(')
     const rprn = colors.magenta(')')
-    const { dir, file } = this.config.app.path
-    const path = colors.green(`${dir}/${file}`)
+    let _pth = colors.green(this.path.path_to_str(this.modl.path))
     let str
     if (pos) {
       const row = colors.yellow(`${pos.row}`)
       const col = colors.cyan(`${pos.col}`)
-      str = `${lprn}${path}:${row}:${col}${rprn}`
+      str = `${lprn}${_pth}:${row}:${col}${rprn}`
     } else {
-      str = `${lprn}${path}${rprn}`
+      str = `${lprn}${_pth}${rprn}`
     }
 
     console.log(message, `at ${colors.bold(str)}`)
   }
-
   expected_arg(iden: string, expects: number, given: number): void {
-    this.log_with_line(
-      `function ${iden_qute(iden)} expects ${num_qute(
-        expects
-      )} arguments but only ${num_qute(given)} given!`
-    )
+    const idc = iden_qute(iden)
+    const exc = num_qute(expects)
+    const gvc = num_qute(given)
+    const msg = `function ${idc} expects ${exc} arguments but only ${gvc} given!`
+    this.semantic_err(msg)
   }
-
   not_defind(iden: string): void {
-    this.syntax_err(`identifier ${iden_qute(iden)} is not defined!`)
+    this.semantic_err(`identifier ${iden_qute(iden)} is not defined!`)
   }
-
   wrong_type_arg(iden: string, arg_index: number): void {
-    this.log_with_line(
-      `wrong type for argument ${num_qute(arg_index)} of ${iden_qute(iden)}!`
-    )
+    const argic = num_qute(arg_index)
+    const idc = iden_qute(iden)
+    this.log_with_line(`wrong type for argument ${argic} of ${idc}!`)
   }
-
   wrong_type_return(iden: string): void {
-    this.log_with_line(
-      `returning a value with wrong type from ${iden_qute(iden)}!`
-    )
+    const idc = iden_qute(iden)
+
+    this.log_with_line(`returning a value with wrong type from ${idc}!`)
   }
 }

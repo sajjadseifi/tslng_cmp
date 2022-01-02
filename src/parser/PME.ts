@@ -1,6 +1,6 @@
 import { FileExtention } from '../lib/path'
 import { Nullable } from '../types'
-import { IPME, KeyPME, ParserMode, SubParserTT } from './types'
+import { IPME, KeyPME, ParserMode, ParserStatuses, SubParserTT } from './types'
 
 export class PME {
   private pmes: IPME[]
@@ -8,7 +8,12 @@ export class PME {
     this.pmes = []
   }
 
-  set(parser: SubParserTT, mod: ParserMode, ext: FileExtention): boolean {
+  set(
+    parser: SubParserTT,
+    mod: ParserMode,
+    ext: FileExtention,
+    stuses?: ParserStatuses | true
+  ): boolean {
     let exist = false
     const key = { mod, ext }
 
@@ -16,17 +21,27 @@ export class PME {
       console.log(`key ${key} exsit in pms`)
       exist = true
     }
-
-    const pme = { parser, key }
+    if (stuses === true) {
+      stuses = {
+        suggest: true,
+        log: {
+          semantic: true,
+          syntax: true,
+          warning: true,
+          error: true
+        }
+      }
+    }
+    const pme = { parser, key, stuses }
 
     this.pmes.push(pme)
 
     return exist
   }
-  get(key: KeyPME): Nullable<SubParserTT> {
+  get(key: KeyPME): Nullable<IPME> {
     const { ext, mod } = key
 
-    return this.pmes.find(this.same_key(mod, ext))?.parser
+    return this.pmes.find(this.same_key(mod, ext))
   }
   get_with_check(
     key: KeyPME,

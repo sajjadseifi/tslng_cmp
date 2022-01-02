@@ -1,0 +1,3 @@
+function coc(Array A,Int x) returns Int:
+    val Int n;
+end

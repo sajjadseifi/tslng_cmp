@@ -1,5 +1,5 @@
 import { Lex } from './lex'
-import { ILex, ILexProps, IPosition, IToken, TokenType } from './types'
+import { ILexProps, IPosition, IToken, TokenType } from './types'
 import { ILexer, ILexerAtomata } from './types/lexer'
 import { TokenError, TokenTypeError } from './types/type'
 import { keywords, patterns } from './constants'
@@ -9,10 +9,8 @@ import { NULL } from './constants/val'
 import { APHA_NUMERIC_UNDE, SPECIAL_CHAR } from './constants/pattern'
 export class Lexer implements ILexer, ILexerAtomata {
   lex: Lex
-  finished: boolean
   constructor(public fd: number, index: number) {
     this.lex = new Lex(fd, index)
-    this.finished = false
   }
   set_fd(plex: ILexProps): void {
     this.lex.set_fd(plex.fd, plex.index)
@@ -22,6 +20,9 @@ export class Lexer implements ILexer, ILexerAtomata {
   }
   get pos(): IPosition {
     return this.lex.pos
+  }
+  get finished(): boolean {
+    return this.lex.eof
   }
 
   skiper_signle_char(): void {
@@ -111,7 +112,7 @@ export class Lexer implements ILexer, ILexerAtomata {
 
     while (!lex.eof && counts-- > 0) res.push(this.next_token())
 
-    lex.set_index(saved)
+    this.lex.set_index(saved)
 
     return res
   }
@@ -151,11 +152,11 @@ export class Lexer implements ILexer, ILexerAtomata {
     if (this.lex.tmp == '--' || this.lex.tmp == '/*') {
       return this.init()
     }
+    // console.log(this.char_index, this.lex.tmp)
     //Itoken
     return new Token(tok_type as TokenType, this.lex.tmp, this.lex.pos)
   }
   eof(): IToken {
-    this.finished = true
     return new Token(TokenType.EOF, undefined, this.lex.pos)
   }
   comment_line(): void {
@@ -229,6 +230,8 @@ export class Lexer implements ILexer, ILexerAtomata {
     this.lex.get_char()
     //
     switch (val) {
+      case keywords.PUB:
+        return TokenType.TOKEN_KEYWORD_PUB
       case keywords.IMP:
         return TokenType.TOKEN_KEYWORD_IMP
       case keywords.FUNCTION:
@@ -253,6 +256,7 @@ export class Lexer implements ILexer, ILexerAtomata {
         return TokenType.TOKEN_KEYWORD_FOREACH
       case keywords.WHILE:
         return TokenType.TOKEN_KEYWORD_WHILE
+
       default:
         return NULL
     }

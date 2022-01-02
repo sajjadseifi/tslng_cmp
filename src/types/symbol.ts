@@ -1,11 +1,11 @@
-import { IPosition } from '.'
+import { IPosition, Nullable } from '.'
 import { sym } from '../constants'
 
 type SymKeys = keyof typeof sym
 export type SymbolType = typeof sym[SymKeys]
 export type Scop = number
 export type KeySymbol = string | Scop | undefined
-export type SymNulable = ISymbol | null
+export type SymNulable = Nullable<ISymbol>
 export interface ISymbol {
   key?: KeySymbol
   subTables?: ISymbolTable
@@ -13,9 +13,13 @@ export interface ISymbol {
   is_func?: boolean
   index: number
   param_counts: number
-  is_used?: boolean
   position: IPosition
+  is_pub?: boolean
   used(): void
+  get is_used(): boolean
+  get used_number(): number
+  to_pub(): void
+  set_pub(is_pub: boolean): void
   set_type(type: SymbolType): void
   set_key(key: KeySymbol): void
   set_index(index: number): void
@@ -39,7 +43,7 @@ export interface ISymbolTable {
   delete(key: string): SymNulable
   del_node(node: SymNulable): SymNulable
   get(key: string): SymNulable
-  exist(key: string): boolean
+  exist(key?: string): boolean
   clear(): void
   join(table: ISymbolTable): void
   find_in_all_scop(key: string): SymNulable

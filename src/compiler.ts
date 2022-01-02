@@ -19,40 +19,43 @@ import {
 } from './lib/graph'
 import { FileExtention, IPathTes, Path, PathTes } from './lib/path'
 import { zero } from './utils'
-import { IParserBase, KeyPME, ParserMode, SubParserTT } from './parser/types'
-import { TesParser } from './parser/tes-parser'
-import { DefParser } from './parser/def-parser'
-import { AssParser } from './parser/ass-parser'
-import { HeadeParser } from './parser/head-parser'
+import { IParserBase, strble_mode_parse } from './parser/types'
+import colors from 'colors'
+import { IParserGenerator, ParserGenerator } from './parser-generator'
 export interface ICompiler {
   run(): void
 }
 
 const { POST_ORDER } = SearchMode
-
 export class Compiler {
   gm: IGraph<IModule>
   lexer!: ILexer
   parser!: IParserBase
+  logger!: ILogger
   congigure: ConfigurManagemnt
-  logger: ILogger
   root: ISymbolTable
-  suggest: ISuggestion
+  suggest!: ISuggestion
   tpath: IPathTes
+  private completed_mods: number
+  private switcher: IParserGenerator
   constructor() {
+    this.completed_mods = 0
     this.tpath = new PathTes(_defalut.base_route)
     this.congigure = new ConfigurManagemnt(this.tpath)
-    this.logger = new Logger(this.lexer, this.congigure.config)
-    this.suggest = new Suggestion(this, this.logger)
     this.root = new SymbolTable()
     this.gm = new Graph(undefined, true)
+    this.switcher = new ParserGenerator(this)
+  }
+  add_to_complet() {
+    this.completed_mods++
   }
   async run() {
     //[init configure]
     this.congigure.init()
     //[start compiler]
     this.build()
-    this.init_pmes()
+    //parser mode extention [switcher]
+    this.switcher.build()
     //[pre compiling for founded modules and forward refrencing]
     await this.pre_compile()
     //[parse and then compilation]
@@ -60,7 +63,7 @@ export class Compiler {
     //[do some thing after compilation]
     // this.post_compile()
   }
-  async load_file(node: IGraphNode<IModule>): Promise<number> {
+  async load_file_node(node: IGraphNode<IModule>): Promise<number> {
     let fd = -1
     try {
       const fpath = this.tpath.path_to_str(node.value.path)
@@ -75,40 +78,17 @@ export class Compiler {
   }
   build() {
     const cnf = this.congigure.config
+    //Lexer
     this.lexer = new Lexer(-1, -1)
-    const { lexer: l } = this
-    this.logger = new Logger(l, cnf)
-    //init parser
-    const { logger: lg, suggest: sg, root: r } = this
-    this.parser = new Parser(l, cnf, lg, sg, r)
-  }
-  init_pmes(): void {
-    //import pars
-    this.parser.new_PME(DefParser, ParserMode.IMP, FileExtention.HTES)
-    this.parser.new_PME(DefParser, ParserMode.IMP, FileExtention.TES)
-    //pre parsing
-    // this.parser.new_PME(AssParser, ParserMode.PRE, FileExtention.HTES)
-    this.parser.new_PME(TesParser, ParserMode.PRE, FileExtention.TES)
-    //parsing
-    this.parser.new_PME(HeadeParser, ParserMode.PARSE, FileExtention.HTES)
-    // this.parser.new_PME(AssParser, ParserMode.PARSE, FileExtention.HTES)
-    this.parser.new_PME(TesParser, ParserMode.PARSE, FileExtention.TES)
-  }
-  parser_switching(node: IGraphNode<IModule>): Nullable<SubParserTT> {
-    let key: Nullable<KeyPME>
-    //got to next parser mode
-    let _SP_: Nullable<SubParserTT> = null
-    while (!node.value.is_finished) {
-      //got to next parser mode
-      node.value.next_mode()
-      //get SubParser type
-      key = { mod: node.value.mode, ext: node.value.path.suffix }
-      _SP_ = this.parser.parsers.get(key)
-      //out in while if exsit
-      if (_SP_) break
-    }
-
-    return _SP_
+    const { lexer: l, tpath: t } = this
+    //Loger
+    this.logger = new Logger(l, cnf, t)
+    const { logger: lg } = this
+    //Suggestion
+    this.suggest = new Suggestion(this, lg)
+    //Parser
+    const { suggest: sg, root: r } = this
+    this.parser = new Parser(l, cnf, lg, sg, r, false)
   }
   //DFS
   async load_mods_dfs(root: IGraphNode<IModule>): Promise<void> {
@@ -125,25 +105,41 @@ export class Compiler {
       await this.load_mods_dfs(node)
     }
   }
+  post_order_mod(root: IGraphNode<IModule>): void {
+    if (root === null) return
+
+    root.visit()
+    for (const node of root.children) {
+      //Check the node if it was not visited
+      if (node.visited) continue
+      //search children not visited node
+      this.post_order_mod(node)
+    }
+    //re parsing
+    this.module_handler(root)
+    //un visit node
+    root.un_visit()
+  }
   //
   async_module_handler: AsyncTraversalExcutor<IModule> = async (node) => {
     //opeining a file to start
-    if (node.value.is_start) await this.load_file(node)
+    if (node.value.is_start) await this.load_file_node(node)
     //syncron oprations
     return this.module_handler(node)
   }
   module_handler: TraversalExcutor<IModule> = (node) => {
-    node.log()
-    console.log(node.value.complex, node.value.plex)
-    //
     if (node.value.is_finished) return true
     //completing level in lexer
     this.cheack_and_complet(node)
     //seting node on parser layout for get symbols on childs import node
     this.parser.set_module_node(node)
     //run on mode seleted
-    const __SP__ = this.parser_switching(node)
-    this.parser.execute(__SP__)
+    this.switcher.switching(node)
+    console.log(colors.green(`:: ${strble_mode_parse[node.value.mode]} ::`))
+    node.log()
+    this.parser.execute(this.switcher.parser)
+    //resposne after parser executatuon
+    this.checking_after_mode_travel(node)
     //undset parser
     this.parser.unset_module_node()
     //if parser change mode of def to in_pre need to add new module
@@ -153,10 +149,22 @@ export class Compiler {
     return true
   }
   cheack_and_complet(node: IGraphNode<IModule>): void {
-    console.log(node.value.mode)
-    if (node.value.is_start) node.value.update_plex()
-    else if (node.value.is_imp) node.value.update_complex()
-    console.log('modl.plex', node.value.plex)
+    if (node.value.is_start) {
+      node.value.update_plex()
+    } else if (node.value.is_imp || node.value.is_finished) {
+      node.value.update_complex()
+    }
+  }
+  checking_after_mode_travel(node: IGraphNode<IModule>): void {
+    //if is parse mode loged suggestion
+    // console.log(node.value.is_pre)
+    // if (node.value.is_pre) {
+    //   //root not used function decleared
+    //   this.suggest.declared_and_not_used(node)
+    //   // if (!this.parser.can_run) {
+    //   //   this.parser.logger.not_found_start_func()
+    //   // }
+    // }
   }
   importable_path(parrent: IGraphNode<IModule>): void {
     const dir = parrent.value.path.dir
@@ -209,7 +217,18 @@ export class Compiler {
   //
   compile() {
     //pre or parsing file
-    this.gm.traversal(POST_ORDER, this.module_handler)
+    this.gm.un_visit_all(this.gm.root!)
+    // this.post_order_mod(this.gm.root!)
+    while (true) {
+      console.log({
+        cm: this.completed_mods,
+        glen: this.gm.len
+      })
+
+      if (this.completed_mods >= this.gm.len) break
+
+      this.gm.traversal(POST_ORDER, this.module_handler)
+    }
   }
   //
   post_compile() {}

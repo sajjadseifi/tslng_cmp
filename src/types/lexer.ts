@@ -2,14 +2,14 @@ import { ILexProps, IPosition, TokenType, TokenTypeError } from '.'
 import { TokenError } from './type'
 
 export interface ILexer {
-  finished: boolean
   prev_token(): TokenError
   next_token(): TokenError
   follow(counts: number): TokenError[]
-  get pos(): IPosition
   set_fd(plex: ILexProps): void
-  get char_index(): number
   clear(): void
+  get pos(): IPosition
+  get char_index(): number
+  get finished(): boolean
 }
 
 export interface ILexerAtomata {

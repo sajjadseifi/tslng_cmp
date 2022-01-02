@@ -21,6 +21,7 @@ export interface IPathTes {
   get base(): string
   path_to_dir(_path: IPath, full?: boolean): string
   path_to_str(_path: IPath, full?: boolean): string
+  path_in_base(): string
   nested_files(dir: string, full?: boolean): string[]
 }
 export class Path implements IPath {
@@ -57,7 +58,9 @@ export class PathTes implements IPathTes {
 
     return res
   }
-
+  path_in_base(): string {
+    return ''
+  }
   private init() {}
   full_path(...pathParams: string[]): string {
     return path.resolve(this.base_route, ...pathParams).normalize()

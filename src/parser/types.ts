@@ -1,7 +1,15 @@
 import { FileExtention } from '../lib/path'
 import { IModule } from '../graph-module'
 import { IGraphNode } from '../lib/graph'
-import { IRunner, ISymbolTable, IToken, Nullable, SymbolType } from '../types'
+import {
+  DeepPartial,
+  IRunner,
+  ISymbolTable,
+  IToken,
+  LogingAquiredStatus,
+  Nullable,
+  SymbolType
+} from '../types'
 import { EpxrType } from '../types/parser'
 import { Parser } from './parser'
 import { PME } from './PME'
@@ -20,6 +28,14 @@ export enum ParserMode {
   POST, //post parse
   FINISHED //post parse
 }
+export const strble_mode_parse: string[] = [
+  'SRART',
+  'IMP',
+  'PRE',
+  'PARSE',
+  'POST',
+  'FINISHED'
+]
 
 export interface IParser {
   parse(): void
@@ -37,6 +53,12 @@ export interface IParsMode {
   parser: IParser
   mode: ParserMode
 }
+interface Statuses {
+  suggest: boolean
+  log: LogingAquiredStatus
+}
+export type ParserStatuses = DeepPartial<Statuses>
+
 export interface KeyPME {
   mod: ParserMode
   ext: FileExtention
@@ -44,22 +66,21 @@ export interface KeyPME {
 export interface IPME {
   key: KeyPME
   parser: SubParserTT
+  stuses?: ParserStatuses
 }
 //base root of parser
 export interface IParserBase {
-  execute(__SP__?: Nullable<SubParserTT>): void
+  execute(__SP__?: Nullable<SubParserTT>, status?: ParserStatuses): void
   set_module_node(node: IGraphNode<IModule>): void
   unset_module_node(): void
   set_symbols(symbols: ISymbolTable): void
-  new_PME(parser: SubParserTT, mode: ParserMode, ext: FileExtention): void
   root: ISymbolTable
   imports: string[]
-  parsers: PME
 }
 //recursive diecent
 export interface IParserRD {
   prog(): void //
-  func(): boolean //
+  func(): void //
   body(): boolean //
   stmt(): boolean //
   defvar(): boolean //

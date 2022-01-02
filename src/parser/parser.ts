@@ -22,9 +22,7 @@ import { ISuggestion } from '../suggestion'
 import { IConfig } from '../config'
 import { IGraphNode } from '../lib/graph'
 import { IModule } from '../graph-module'
-import { ParserMode, IParserBase, SubParser, SubParserTT } from './types'
-import { FileExtention } from '../lib/path'
-import { PME } from './PME'
+import { IParserBase, SubParser, SubParserTT } from './types'
 
 export class Parser implements IParserBase {
   symtbl: ISymbolTable
@@ -37,14 +35,14 @@ export class Parser implements IParserBase {
   module_node?: IGraphNode<IModule>
   imports: string[]
   error: boolean
-  parsers: PME
   parser: Nullable<SubParser>
   constructor(
     public lexer: ILexer,
     public config: IConfig,
     public logger: ILogger,
     public suggest: ISuggestion,
-    root: ISymbolTable
+    root: ISymbolTable,
+    is_lexlog?: boolean
   ) {
     this.func_arg = new SymbolTable()
     this.ec = new ErrorCorrection(this, this.logger)
@@ -55,62 +53,72 @@ export class Parser implements IParserBase {
     this.log_lex = false
     this.error = false
     this.imports = []
-    this.parsers = new PME()
-    // this.loging_lexer()
+    if (is_lexlog) this.loging_lexer()
   }
-  get imp_mods() {
+  get imp_cholds_mod() {
     return this.module_node?.children! || []
   }
   get modules() {
     return this.module_node?.value!
   }
-
+  private get mod_tbls() {
+    return (
+      this.imp_cholds_mod //
+        .filter((cmn) => cmn.key != this.module_node?.key) //
+        .map((mn) => mn.value.symbols) || //
+      []
+    )
+  }
   execute(__SP__?: Nullable<SubParserTT>): void {
     if (is_null(__SP__)) return
-
     this.parser = new __SP__!(this)
 
-    this.parser.parse()
-  }
-  private get mod_tbls() {
-    return this.imp_mods.map((mn) => mn.value.symbols) || []
+    try {
+      this.parser.parse()
+    } catch (err) {
+      console.log(err)
+      // console.log('err catch parseer')
+    }
   }
 
-  new_PME(parser: SubParserTT, mode: ParserMode, ext: FileExtention): void {
-    this.parsers.set(parser, mode, ext)
-  }
   sym_declared(key: KeySymbol): ISymbol[] {
-    const tbl_stak = [this.crntstbl, ...this.mod_tbls]
+    const strk = key as string
     const syms: ISymbol[] = []
-    let sym = null
-    for (const tbl of tbl_stak) {
-      sym = this.crntstbl.get(key as string)
-      if (sym) {
-        syms.push(sym)
-      }
+    let sym = this.crntstbl.find_globaly(strk)
+    //exsit in scop
+    if (sym) return [sym]
+
+    for (const tbl of this.mod_tbls) {
+      sym = tbl.get(key as string)
+      //if exsit in module
+      if (sym && sym.is_pub) syms.push(sym)
     }
     return syms
   }
   is_declared(key: KeySymbol): boolean {
     const strk = key as string
-    const tbl_stak = [this.crntstbl, ...this.mod_tbls]
     const ex = (stbl: ISymbolTable) => stbl.exist(strk)
+    const is_ex = !!this.crntstbl.find_globaly(strk)
 
-    return tbl_stak.some(ex)
+    return is_ex || this.mod_tbls.some(ex)
   }
   set_symbols(symbols: ISymbolTable): void {
     this.crntstbl = this.symtbl = symbols
   }
   set_module_node(node: IGraphNode<IModule>): void {
-    this.module_node = node
-    this.lexer.clear()
+    //update last position completed
     node.value.update_plex()
+    //clear lexer data
+    this.lexer.clear()
     this.lexer.set_fd(node.value.plex)
+    this.logger.set_module(node.value)
+    this.logger.reset()
     this.set_symbols(node.value.symbols)
+    //
+    this.module_node = node
   }
   unset_module_node(): void {
     const modl = this.module_node!.value
-
     modl.set_plex(modl.plex.fd, this.lexer.char_index)
     this.module_node = undefined
   }
@@ -120,31 +128,34 @@ export class Parser implements IParserBase {
   get current_symbols() {
     return this.crntstbl.symbols
   }
-
+  token_skipper(cb: () => boolean): void {
+    while (cb()) this.next()
+  }
   loging_lexer() {
     this.log_lex = true
   }
-  next(): IToken {
+  next(ignored_exp: boolean = false): IToken {
     const tok = this.lexer.next_token()
     if (tok instanceof Token) {
       //log token
-      if (this.log_lex) console.log(tok)
+      if (this.log_lex) console.log(tok.val)
       //exit app
       if (tokChecker.is_eof(tok)) process.exit(0)
 
       return tok
     }
-    console.log(tok as LexicalError)
-    process.exit(1)
+    throw tok
   }
   get first_follow(): IToken {
     return this.follow(1)[0]
   }
   follow(size: number): IToken[] {
     const res = this.lexer.follow(size) || []
-    //
-    for (let r of res) if (r instanceof LexicalError) throw new Error(r.message)
 
+    for (let r of res)
+      if (r instanceof LexicalError) {
+        throw new Error(r.message)
+      }
     return res as IToken[]
   }
   func_scop = (scop_key: any) => {
@@ -206,7 +217,7 @@ export class Parser implements IParserBase {
   forward_chek(...items: string[]): boolean {
     const flw = this.follow(items.length)
 
-    for (let i = 0; i < flw.length; i++) {
+    for (let i = 0; flw && i < flw.length; i++) {
       if (flw[i].val === items[i]) continue
 
       return false
@@ -214,9 +225,9 @@ export class Parser implements IParserBase {
     return true
   }
   in_follow(...terminals: string[]): boolean {
-    const [flw] = this.follow(1)
+    const flw = this.first_follow
 
-    for (let i = 0; i < terminals.length; i++) {
+    for (let i = 0; flw && i < terminals.length; i++) {
       if (flw.val == terminals[i]) return true
     }
 

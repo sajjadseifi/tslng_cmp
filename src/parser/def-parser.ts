@@ -14,7 +14,7 @@ export class DefParser extends SubParser implements IParser {
     const [imp, mod] = this.parser.follow(2)
     //end of import
     if (!imp_or_mod(imp) && !imp_or_mod(mod)) return true
-
+    //
     if (is_imp(imp)) this.parser.next()
     else {
       this.parser.logger.correct_word_place(imp, keywords.IMP)

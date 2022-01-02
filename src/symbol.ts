@@ -4,6 +4,7 @@ import {
   ISymbol,
   ISymbolTable,
   KeySymbol,
+  Nullable,
   Scop,
   SymbolType,
   SymNulable
@@ -14,20 +15,29 @@ export class Sym implements ISymbol {
   is_func?: boolean
   index: number = -1
   position: IPosition
+  is_pub?: boolean
+  private _used_sym_number: number
   constructor(
     public key?: string | Scop,
     public type?: SymbolType,
     public param_counts: number = -1
   ) {
+    this.is_pub = false
+    this._used_sym_number = 0
     this.set_prms_count(param_counts)
     this.position = new Position(-1, -1)
+  }
+  get is_used(): boolean {
+    return this._used_sym_number > 0
+  }
+  get used_number(): number {
+    return this._used_sym_number
   }
   set_pos(pos: IPosition): void {
     this.position = pos
   }
-  is_used?: boolean | undefined
   used(): void {
-    this.is_used = true
+    this._used_sym_number++
   }
   set_index(index: number): void {
     this.index = index
@@ -56,10 +66,18 @@ export class Sym implements ISymbol {
 
     t.add_node(sym)
   }
+  set_pub(is_pub: boolean): void {
+    this.is_pub = is_pub
+  }
+  to_pub(): void {
+    this.is_pub = true
+  }
 }
 
 export class SymbolTable implements ISymbolTable {
   symbols: ISymbol[]
+  parrent?: ISymbolTable
+
   constructor() {
     this.symbols = []
   }
@@ -116,7 +134,6 @@ export class SymbolTable implements ISymbolTable {
   del_by_index(index: number) {
     this.symbols.filter((_, i) => i == index)
   }
-  parrent?: ISymbolTable | undefined
   clear(): void {
     this.symbols = []
   }
@@ -140,9 +157,9 @@ export class SymbolTable implements ISymbolTable {
     this.symbols.push(sym)
   }
   private find(key: KeySymbol): number {
-    return this.symbols.findIndex((s) => s.key == key)
+    return this.symbols.findIndex((s) => s.key === key)
   }
-  delete(key: KeySymbol): ISymbol | null {
+  delete(key: KeySymbol): Nullable<ISymbol> {
     const index = this.find(key)
     if (index == -1) {
       return null
@@ -153,14 +170,14 @@ export class SymbolTable implements ISymbolTable {
 
     return sym
   }
-  get(key: string): ISymbol | null {
+  get(key: string): Nullable<ISymbol> {
     const index = this.find(key)
     if (index == -1) {
       return null
     }
     return this.symbols[index]
   }
-  exist(key: string): boolean {
+  exist(key?: string): boolean {
     return this.find(key) != -1
   }
   find_in_all_scop(key: string): SymNulable {

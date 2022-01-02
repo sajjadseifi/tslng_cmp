@@ -1,4 +1,6 @@
 import colros from 'colors'
+import { Iloging } from 'src/graph-module'
+import { strble_mode_parse } from 'src/parser/types'
 import { Nullable } from '../types'
 import { is_null } from '../utils'
 
@@ -29,6 +31,7 @@ export interface IGraphNode<T> {
 
 export interface IGraph<T> {
   root: Nullable<IGraphNode<T>>
+  get len(): number
   open_log(): void
   close_log(): void
   add_generic(value: Value<T>, pkey: Key): Nullable<IGraphNode<T>>
@@ -57,7 +60,7 @@ export interface IGraph<T> {
   un_visit_all(root: IGraphNode<T>): void
 }
 
-export class GraphNode<T> implements IGraphNode<T> {
+export class GraphNode<T extends Iloging & any> implements IGraphNode<T> {
   children: IGraphNode<T>[]
   visited: boolean
   constructor(public key: Key, public value: T) {
@@ -116,19 +119,23 @@ const _defualt_executor = <T>(node: IGraphNode<T>): boolean => {
   console.log(node.key)
   return true
 }
+
 export class Graph<T> implements IGraph<T> {
   private uniq_key: number
   root: Nullable<IGraphNode<T>>
   logging: boolean = false
-
+  private _len: number
   constructor(
     public executor: TraversalExcutor<T> = _defualt_executor,
     public generic?: boolean
   ) {
     this.uniq_key = 0
+    this._len = 0
     this.root = null
   }
-
+  get len(): number {
+    return this._len
+  }
   open_log() {
     this.logging = true
   }
@@ -145,6 +152,7 @@ export class Graph<T> implements IGraph<T> {
     if (!executor) return this.logging
     //output of executer to check continues
     const resp = executor(node)
+
     //catched on upper level
     if (!resp) throw resp
     //return true to traversal
@@ -201,6 +209,8 @@ export class Graph<T> implements IGraph<T> {
     parrent: Nullable<IGraphNode<T>>
   ): Nullable<IGraphNode<T>> {
     const _node = this.search_by_key(node.key) || node
+    //add len
+    if (_node == node) this._len++
 
     if (this.root === null) this.root = _node
     else {
@@ -222,14 +232,21 @@ export class Graph<T> implements IGraph<T> {
   }
   rm_by_key(key: Key): Nullable<IGraphNode<T>> {
     const node = this.search_by_key(key)
+
+    if (this.root === node) {
+      this._len = 0
+      this.root = null
+    }
+
     if (node) {
       //find parretns
       const prs = this.parents(key)
       //rm child on parrent
       prs.forEach((p) => p.rm_child(key))
+      //decrease
+      this._len--
     }
     //
-    if (this.root === node) this.root = null
 
     return node
   }
@@ -331,8 +348,6 @@ export class Graph<T> implements IGraph<T> {
     //[In Order Traversal]
     else if (mode === SearchMode.IN_ORDER && root.children.length === 0)
       __cb__(root)
-    //[Pre Order Traversal] First visit root
-    else if (mode === SearchMode.POST_ORDER && root == this.root) __cb__(root)
 
     //seach for all child not visited
     for (const node of children) {

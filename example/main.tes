@@ -1,5 +1,6 @@
-imp "./1.tes"
-imp "./3.tes"
+--imp "./1.tes"
+--imp "./3.tes"
+imp "./shyn48.tes"
 
 function find(Array A,Int x) returns Int:
     val Int n;
@@ -17,9 +18,10 @@ function man() returns Int:
     val Array A;
     val Int a;
     A = createArray(3);
-    A[0] = 3;
+    b = 3;
     A[1] = 8;
     A[2] = 5;
+    b = sum (A,a,a);
     printInt(find(A, a));
     printInt(find(A));
     printInt(find(a, A));

@@ -14,8 +14,10 @@
     "noEmit": true,
     "jsx": "react-jsx",
     "noFallthroughCasesInSwitch": true,
-    "module": "commonjs"
+    "module": "commonjs",
+    "experimentalDecorators": true
   },
+  "experimentalDecorators": true,
   "allowJs": true,
   "extends": "./tsconfig.paths.json",
   "exclude": ["node_mpdules"],

@@ -191,15 +191,14 @@ export class ErrorCorrection implements IErrorCorrection {
   function_in_iden(): string | null {
     const tok = this.parser.first_follow
 
-    if (!tokChecker.is_iden(tok)) {
-      this.logger.syntax_err(`name '${tok.val}' dont identifier'`)
-      if (tokChecker.is_keyword(tok)) {
-        this.parser.next()
-      }
-    } else {
+    if (tokChecker.is_iden(tok)) {
       this.parser.next()
       return tok.val!
     }
+    //
+    if (tok && tok.val) this.logger.word_not_iden(tok.val)
+    //
+    if (tokChecker.is_keyword(tok)) this.parser.next()
 
     return null
   }
@@ -236,9 +235,11 @@ export class ErrorCorrection implements IErrorCorrection {
   }
   private caps_clist(exist: boolean, prmc: number, val: string) {
     const c = new TesParser(this.parser).clist()
-    if (exist && c !== prmc) {
-      this.parser.logger.expected_arg(val, prmc, c)
-    }
+    const isparse = this.parser.module_node?.value.is_parse
+    //
+    if (!isparse || !exist || c === prmc) return
+    //
+    this.parser.logger.expected_arg(val, prmc, c)
   }
   expr_iden_is_func(iden: ISymbol, exist: boolean): void {
     const val = `${iden.key}`
