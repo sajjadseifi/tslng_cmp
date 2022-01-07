@@ -1,6 +1,6 @@
 
 -- creating array with size of 'n'
-createArray(Int n) returns Array;
+Array createArray(Int n);
 
 -- get length of array with Array  
 Int arrayLength(Array arr):

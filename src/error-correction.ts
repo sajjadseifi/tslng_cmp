@@ -16,9 +16,14 @@ import {
 import { same_type } from './utils/type-checking'
 import { Parser } from './parser/parser'
 import { TesParser } from './parser/tes-parser'
+import { Compiler } from './compiler'
 
 export class ErrorCorrection implements IErrorCorrection {
-  constructor(public parser: Parser, public logger: ILogger) {}
+  constructor(public compiler: Compiler, public logger: ILogger) {
+  }
+  get parser():Parser{
+    return this.compiler.parser as Parser
+  }
   ignored(cb: () => boolean): void {
     while (cb()) this.parser.next()
   }
@@ -158,7 +163,7 @@ export class ErrorCorrection implements IErrorCorrection {
     this.foreach_after_of()
   }
   foreach_after_of() {
-    this.foreach_after_expr(new TesParser(this.parser).expr())
+    this.foreach_after_expr(new TesParser(this.compiler).expr())
   }
   foreach_in_expr_type(exist: EpxrType): void {
     if (typeCheking.is_empty(exist)) {
@@ -229,12 +234,12 @@ export class ErrorCorrection implements IErrorCorrection {
 
       return sym.EMPTY
     }
-    const tprs = new TesParser(this.parser)
+    const tprs = new TesParser(this.compiler)
 
     return tprs.type() as SymbolType
   }
   private caps_clist(exist: boolean, prmc: number, val: string) {
-    const c = new TesParser(this.parser).clist()
+    const c = new TesParser(this.compiler).clist(0)
     const isparse = this.parser.module_node?.value.is_parse
     //
     if (!isparse || !exist || c === prmc) return
@@ -248,10 +253,13 @@ export class ErrorCorrection implements IErrorCorrection {
     const center = () => this.caps_clist(exist, prmc, val)
 
     this.parser.capsolate('(', ')', center, false)
+
+    //out of function expresion
+    this.parser.focuses.pop()
   }
   /* Body Begin or not with token ':'*/
   body_begin(scop: number, keyword: string): void {
-    const tsprs = new TesParser(this.parser)
+    const tsprs = new TesParser(this.compiler)
     if (this.parser.in_follow(':') == false) {
       this.parser.logger.keyword_block_body(keyword, true)
       tsprs.new_scop_stmt(scop, keyword)

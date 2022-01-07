@@ -12,30 +12,26 @@ import {
   is_type,
   is_val
 } from '../utils/token-cheker'
-import { same_type } from '../utils/type-checking'
+import { is_empty, same_type, type_str } from '../utils/type-checking'
 import { IParser, IParserRD, SubParser } from './types'
-import { Parser } from './parser'
 import { IModule } from '../graph-module'
+import { Compiler } from '../compiler'
 
 export class TesParser extends SubParser implements IParser, IParserRD {
   module: IModule
-  constructor(public parser: Parser) {
-    super(parser)
+  constructor(public cmp: Compiler) {
+    super(cmp)
     this.module = this.parser.module_node!.value!
   }
   parse(): void {
     this.prog()
+    
   }
   prog(): void {
     //
     if (this.parser.lexer.finished) return
-
     //init function
     this.func()
-    //root not used function decleared
-    if (this.parser.module_node?.value.is_parse) {
-      this.parser.suggest.declared_and_not_used(this.parser.module_node!)
-    }
     //re call prog
     this.prog()
   }
@@ -79,11 +75,9 @@ export class TesParser extends SubParser implements IParser, IParserRD {
     //skeeping
     this.parser.ec.function_skeep_tokn_not_valid()
     //add defined to foucuses table
-    this.parser.focuses.defind(symnode)
     //counting function arg
     this.parser.capsolate('(', ')', () => (prmc = this.flist()), false)
     //pop function defined in focuses table
-    this.parser.focuses.pop()
     //set count of params function
     symnode?.set_prms_count(prmc)
     //returns place
@@ -93,23 +87,54 @@ export class TesParser extends SubParser implements IParser, IParserRD {
     symnode?.set_type(type as SymbolType)
     if (symnode) this.parser.crntstbl.add_node(symnode)
     //start scop function
+    
+    if(!symnode) 
+      symnode = this.parser.crntstbl.get(fcname);
+  
+    this.parser.focuses.defind(symnode)
     this.parser.ec.body_begin(0, keywords.FUNCTION)
+    this.parser.focuses.pop()
+
   }
+  func_scop = (scop_key: any) => {
+    return scop_key === keywords.FUNCTION && this.parser.crntstbl.last!
+  }
+  out_scop = () => {
+    const parent = this.parser.crntstbl.parrent!
+    if(parent)
+    this.parser.crntstbl = parent
+  }
+  goto_scop = (scop_key: string | number) => {
+      //get scop node
+      let  symscop: ISymbol = new Sym(scop_key, sym.NIL);
+      const fcs= this.parser.focuses.focus;
 
+      if(fcs?.is_defined && scop_key === keywords.FUNCTION)
+        symscop = fcs?.sym!; 
+      //if scop not a function must init subtable to use new scop
+      if (!symscop.is_func) symscop.init_subtable(this.parser.crntstbl)
+      //
+      this.parser.crntstbl = symscop.subTables!
+
+      //function in pre parsing
+      if(this.module.is_pre && scop_key !== keywords.FUNCTION)
+        return
+      //foreach statment
+      if(this.module.is_parse && scop_key === keywords.FUNCTION)
+        return
+      //join arg of eny things to first table for function , foreach or ...
+      this.parser.crntstbl.join(this.parser.func_arg)
+      //clear func_arg to
+      this.parser.func_arg.clear()
+  }
   body(scop: number = 0, skop_key?: string): boolean {
-    let ended = false
     //goto sub scop
-    this.parser.goto_scop(skop_key || scop)
+    this.goto_scop(skop_key || scop)
 
-    if (this.stmt(scop, skop_key)) {
-      ended = this.body(scop, skop_key)
-    }
-    //declared varaible or function but not used
-    if (this.module.is_pre)
-      this.parser.suggest.declared_and_not_used(this.parser.module_node!)
-    //outof scop
-    this.parser.out_scop()
-    return ended
+    while(this.stmt(scop, skop_key)) 
+
+    this.out_scop()
+    return false
   }
   stmt(scop: number = 0, scop_key?: string): boolean | any {
     let [tok] = this.parser.follow(1)
@@ -129,12 +154,13 @@ export class TesParser extends SubParser implements IParser, IParserRD {
       //ignored semicolon
       //if semicolon not defind it doesnt matter
       if (this.parser.in_follow(';')) this.parser.next()
-      else if (this.parser.modules.is_pre) this.parser.logger.expect_sem_error()
+      else this.parser.logger.expect_sem_error()
     }
     //expr
     else if (!typeCheking.is_empty(this.expr())) {
       //if semicolon not defind it doesnt matter
       if (this.parser.in_follow(';')) this.parser.next()
+      else this.parser.logger.expect_sem_error()
     }
     //statment not definded
     else return false
@@ -143,14 +169,23 @@ export class TesParser extends SubParser implements IParser, IParserRD {
   }
   return_stmt() {
     this.parser.next()
-    this.expr()
+    const t = this.expr()
+    const func = this.parser.crntstbl.last;
+    if(func?.type != t)
+    {
+      const fn =func?.key;
+      const ft =type_str(func?.type);
+      const rt =type_str(t);
+
+      this.parser.logger.semantic_err(`return type of function '${fn}' is '${ft}' not '${rt}'`);
+    }
     if (this.parser.in_follow(';')) this.parser.next()
     //if next token is not semicolon solved error during
   }
   if_stmt(scop: number) {
     this.parser.next()
 
-    this.parser.capsolate('(', ')', this.expr, false)
+    this.parser.capsolate('(', ')',()=> this.expr(), false)
 
     this.parser.ec.body_begin(scop, keywords.IF)
 
@@ -167,6 +202,12 @@ export class TesParser extends SubParser implements IParser, IParserRD {
     //rm 'end'
     if (this.parser.in_follow(keywords.END)) {
       this.parser.next()
+      //declared varaible or function but not used
+      if (this.module.is_parse)
+      {
+        const varsym = this.parser.crntstbl.symbols.filter(s=>!s.is_func);
+        this.parser.suggest.declared_and_not_used(varsym)
+      }
     }
     //error nested
     else {
@@ -177,7 +218,7 @@ export class TesParser extends SubParser implements IParser, IParserRD {
   while_stmt(scop: number) {
     this.parser.next()
 
-    this.parser.capsolate('(', ')', this.expr, false)
+    this.parser.capsolate('(', ')',()=> this.expr(), false)
 
     if (this.parser.in_follow(keywords.DO)) {
       this.parser.next()
@@ -187,17 +228,16 @@ export class TesParser extends SubParser implements IParser, IParserRD {
   foreach_stmt(scop: number) {
     //foreach keyword ignored
     this.parser.next()
-
-    this.parser.capsolate('(', ')', this.iden_of_expr, false)
-
+    
+    this.parser.capsolate('(', ')',()=> this.iden_of_expr(), false)
+    
     const arg0 = zero(this.parser.func_arg.len)
-      ? new Sym(undefined, 0)
-      : this.parser.func_arg.symbols[0]
-
+    ? new Sym(undefined, 0)
+    : this.parser.func_arg.symbols[0]
+    
     arg0.set_index(0)
-
+    
     this.parser.ec.body_begin(scop, keywords.FOREACH)
-
     //pop iden of expr definition varable
     if (this.parser.focuses.focus?.is_foreach) {
       this.parser.focuses.pop()
@@ -214,26 +254,24 @@ export class TesParser extends SubParser implements IParser, IParserRD {
     } else if (tokChecker.is_iden(tok)) {
       //skip identifier
       this.parser.next()
-
-      const symbol = this.parser.func_arg.put(tok.val!, sym.INT)!
-      this.parser.focuses.foreach(symbol)
-      symbol.set_pos(tok.pos!)
+      if(this.module.is_parse)
+      {
+        const symbol = this.parser.func_arg.put(tok.val!, sym.INT)!
+        this.parser.focuses.foreach(symbol)
+        symbol.set_pos(tok.pos!)
+      }
 
       if (this.parser.in_follow(keywords.OF)) {
         this.parser.next()
         this.parser.ec.foreach_in_expr_type(this.expr())
         //accepted
       } else {
-        this.parser.logger.syntax_err(
-          "foreach need 'of' keyword after the identifier"
-        )
+        this.parser.logger.syntax_err("foreach need 'of' keyword after the identifier")
         this.parser.ec.foreach_after_of()
       }
     } else {
       if (tokChecker.is_num(tok)) {
-        this.parser.logger.syntax_err(
-          'illegal number token to exprtion of foreach'
-        )
+        this.parser.logger.syntax_err('illegal number token to exprtion of foreach')
         this.parser.next()
       }
       this.parser.ec.foreach_after_iden(tok)
@@ -297,13 +335,14 @@ export class TesParser extends SubParser implements IParser, IParserRD {
 
       if (name) this.parser.next()
     }
-
-    if (this.module.is_pre) {
-      if (this.parser.crntstbl.exist(name!)) {
+    //
+    if(this.module.is_parse)
+    {
+      if (this.parser.crntstbl.exist(name!)) 
         this.parser.logger.is_decleared(name!)
-      } else {
+      else 
         this.parser.crntstbl.put(name!, type, false)
-      }
+      
     }
 
     return true
@@ -315,11 +354,47 @@ export class TesParser extends SubParser implements IParser, IParserRD {
       tokChecker.is_num(flw) ||
       this.parser.in_follow('!', '+', '-', '(')
     ) {
-      return this.assign_expr()
+      return this.conditionl_expr()
     }
     return sym.EMPTY
   }
+  conditionl_expr(): EpxrType
+  {
+    const type = this.assign_expr()
+    if(this.parser.in_follow("?"))
+    {
+      this.parser.next();
 
+      let err: boolean = false
+      const ltype = this.expr();
+      if(is_empty(ltype)){
+        err=true
+        this.parser.logger.syntax_err("expersion prev : can not be empty");
+      }
+        
+      if(this.parser.in_follow(":"))
+        this.parser.next();
+      else
+        this.parser.logger.syntax_err("expected : after experison in conditional experssion");
+      
+      const rtype = this.expr();
+
+      if(is_empty(rtype))
+      {
+        err=true
+        this.parser.logger.syntax_err("expersion after : can not be empty");
+      }
+      if(!err && ltype != rtype)
+      {
+        if(this.module.is_parse)
+          this.parser.logger.mismatch_type_conditional(ltype,rtype);
+        err = true;
+      }
+      return err ? sym.NIL : ltype
+
+    }
+    return type
+  }
   assign_expr(): EpxrType {
     const type = this.cond_expr()
     let type2: EpxrType
@@ -413,13 +488,13 @@ export class TesParser extends SubParser implements IParser, IParserRD {
     let _in = false
     while (this.parser.in_follow('+', '-')) {
       if (typ != sym.INT)
-        this.parser.logger.log_with_line('incompatible operands!')
+        this.parser.logger.incompatible_oprands()
       this.parser.next()
       typ = this.mul_expr()
       _in = true
     }
     if (typ != sym.INT && _in)
-      this.parser.logger.log_with_line('incompatible operands!')
+      this.parser.logger.incompatible_oprands()
     return typ
   }
 
@@ -428,13 +503,13 @@ export class TesParser extends SubParser implements IParser, IParserRD {
     let _in = false
     while (this.parser.in_follow('*', '/', '%')) {
       if (typ != sym.INT)
-        this.parser.logger.log_with_line('incompatible operands!')
+      this.parser.logger.incompatible_oprands()
       this.parser.next()
       typ = this.unary_expr()
       _in = true
     }
     if (typ != sym.INT && _in)
-      this.parser.logger.log_with_line('incompatible operands!')
+    this.parser.logger.incompatible_oprands()
     return typ
   }
   unary_oprator(): boolean {
@@ -461,13 +536,15 @@ export class TesParser extends SubParser implements IParser, IParserRD {
   postfix_expr(): EpxrType {
     let typ: EpxrType = this.prim_expr()
     const fsym = this.parser.focuses.focus?.sym!
-    const isArr = this.parser.ec.expr_array_start_bracket(fsym, typ)
+    let isArr = typ === sym.ARRAY 
+
+    if(!isArr && fsym)
+      this.parser.ec.expr_array_start_bracket(fsym, typ)
     //cleaner code arrow function
     const moved_type = () => (typ = this.index_arr_expr(fsym))
     //if array change status symbol to array
-    while (this.parser.in_follow('[')) {
+    while (this.parser.in_follow('[')) 
       this.parser.capsolate('[', ']', moved_type, false, false)
-    }
     //after array expr[expr ]
     if (isArr) this.parser.focuses.pop()
 
@@ -476,32 +553,31 @@ export class TesParser extends SubParser implements IParser, IParserRD {
   prim_expr(): EpxrType {
     const tok = this.parser.first_follow
     if (tokChecker.is_iden(tok)) {
+      this.parser.next()
       const val = tok.val!
       let toks = this.parser.sym_declared(val)
       const iden = toks[0]
       const exist = !!iden
-      this.parser.next()
       //if use the identifier symbol checked th is_used propery
       if (iden) iden.used()
       //error not defind variable and suggest word this place
       else if (this.module.is_parse) {
         this.parser.logger.not_defind(val)
       }
-
+      
+      if (iden) this.parser.focuses.call(iden)
+      //if expr not founded in symbol table
+      else this.parser.focuses.free(val)
+      
       if (this.parser.in_follow('(')) {
-        //add function or expr calling last table
-        // console.log(iden)
-        if (iden) this.parser.focuses.call(iden)
-        //if expr not founded in symbol table
-        else this.parser.focuses.free(val)
+
         //blow code parsed ( flist ) grmaer
         this.parser.ec.expr_iden_is_func(
-          this.parser.focuses.focus!.sym!, //
-          exist //
+          this.parser.focuses.focus!.sym!,
+          exist 
         )
-        //out of function expresion
-        this.parser.focuses.pop()
       }
+
       return iden ? iden.type! : sym.NIL
     } //
     if (tokChecker.is_num(tok)) {
@@ -519,51 +595,48 @@ export class TesParser extends SubParser implements IParser, IParserRD {
     //todo something to check
     if (this.parser.in_follow(')', ']', ';', '}')) return sym.NIL
 
-    this.parser.logger.log_with_line('primary expression is not ok!')
+    if(this.module.is_pre)
+      this.parser.logger.log_with_line('primary expression is not ok!')
     this.parser.next()
     return sym.NIL
   }
 
-  flist(pos: number = 0): number {
+  flist(pos: number = 0,saved_arg:boolean=false): number {
     let arg_name: KeySymbol = undefined
     let arg_type: SymbolType = sym.EMPTY
     let tok = this.parser.first_follow
-
+    //
     const status = this.parser.ec.flist_before_type(pos)
-
-    if (status === 1) {
+    //
+    if (status === 1) 
       return 1 + this.flist(pos + 1)
-    } else if (status === 0) {
-      return 0
-    }
-
-    if (is_type(tok)) {
-      //lang type
-      arg_type = this.type() as SymbolType
-    }
+    //
+    else if (status === 0) return 0
+    //lang type
+    if (is_type(tok)) arg_type = this.type() as SymbolType
     //tok not type
     //follow of tok is type
     //mean :=> [tok not type] type :=> same ret,rturn
-    else if (this.parser.ec.flist_after_not_type(pos)) {
+    else if (this.parser.ec.flist_after_not_type(pos)) 
       return 0
-    }
-
+    //
     if (is_iden(this.parser.first_follow)) arg_name = this.iden().val!
     //
-    else {
-      this.parser.logger.syntax_err(`expected name of arg${pos}`)
+    else this.parser.logger.syntax_err(`expected name of arg${pos}`)
+
+    if(this.module.is_pre || saved_arg) {
+      const ex_arg = arg_name && this.parser.func_arg.get(arg_name)
+      
+      if(ex_arg){
+        const type = this.parser.type_str(ex_arg.type)
+        this.parser.logger.arg_defined_last(ex_arg.key, ex_arg.index, type)
+      }
+      
+      const arg = new Sym(arg_name, arg_type)
+      arg.set_index(pos)
+      this.parser.func_arg.add_node(arg)
     }
 
-    const ex_arg = arg_name && this.parser.func_arg.get(arg_name)
-
-    if (this.module.is_pre && ex_arg) {
-      const type = this.parser.type_str(ex_arg.type)
-      this.parser.logger.arg_defined_last(ex_arg.key, ex_arg.index, type)
-      // arg_name = undefined
-    }
-    const arg = new Sym(arg_name, arg_type)
-    arg.set_index(pos)
-    this.parser.func_arg.add_node(arg)
     //skeep for counting
     if (this.parser.in_follow(',')) {
       this.parser.next()
@@ -574,22 +647,23 @@ export class TesParser extends SubParser implements IParser, IParserRD {
   clist(pos: number = 0): number {
     const exp_tpye = this.expr()
     const empty = typeCheking.is_empty(exp_tpye)
-    const snode = this.parser.fcs.sym
+    const snodefcs = this.parser.fcs
     if (empty) {
-      if (this.module.is_pre) this.parser.logger.arg_empty_call(pos)
+      this.parser.logger.arg_empty_call(pos)
     } else if (
-      this.module.is_parse &&
-      this.parser.fcs.is_call && //not free
-      snode?.is_func && //is function not identifier
-      snode?.param_counts > pos //position defined function must greater than eq pos
+      this.module.is_parse && //
+      snodefcs && // can be null last fcouses
+      snodefcs.is_call && //not free
+      snodefcs.sym?.is_func && //is function not identifier
+      snodefcs.sym?.param_counts > pos //position defined function must greater than eq pos
     ) {
       //get argument at position of symbols
-      const arg_at_pos = snode.subTables!.symbols[pos]
+      const arg_at_pos = snodefcs.sym?.subTables!.symbols[pos]
       //mismatch arg defined and arg call function
       if (!same_type(arg_at_pos.type!, exp_tpye)) {
         const ctyp = arg_at_pos.type!
         const btyp = exp_tpye
-        const fname = snode.key! as string
+        const fname = snodefcs.sym?.key! as string
         this.parser.logger.type_mismatch_arg_func(pos, fname, btyp, ctyp)
       }
     }

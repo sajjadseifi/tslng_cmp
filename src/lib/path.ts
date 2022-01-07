@@ -44,7 +44,6 @@ export class Path implements IPath {
 export class PathTes implements IPathTes {
   constructor(public base_route: string = BASE_ROUTE) {
     this.init()
-    console.log(this)
   }
   nested_files(dir: string, full?: boolean): string[] {
     let res: string[] = []

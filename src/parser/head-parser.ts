@@ -1,16 +1,32 @@
-import { keywords } from 'src/constants'
+import { Compiler, SharedCompier } from '../compiler'
+import { Sym } from '../symbol'
+import { ISymbol, Nullable, SymbolType } from '../types'
+import { keywords } from '../constants'
 import {
   is_begin,
   is_end,
+  is_eof,
+  is_iden,
   is_lprns,
   is_rprns,
   is_sem,
   is_spec,
   is_type
-} from 'src/utils/token-cheker'
+} from '../utils/token-cheker'
+import { TesParser } from './tes-parser'
 import { IParser, SubParser } from './types'
 export class HeadeParser extends SubParser implements IParser {
-  parse(): void {}
+  private tesprs:TesParser
+  constructor(compiler: SharedCompier)
+  {
+    super(compiler)
+
+    this.tesprs = new TesParser(this.compiler as Compiler)
+
+  }
+  parse(): void {
+    this.prog()
+  }
   /*
     prog := func |
             func prog |
@@ -26,7 +42,6 @@ export class HeadeParser extends SubParser implements IParser {
   */
   prog(): void {
     if (this.parser.lexer.finished) return
-
     this.func()
 
     this.prog()
@@ -40,33 +55,79 @@ export class HeadeParser extends SubParser implements IParser {
     //
     else if (this.parser.modules.is_pre) this.parser.logger.expect_sem_error()
   }
-  fdec(): void {}
+  fdec(): void {
+    if(this.parser.lexer.finished) return;
 
+
+    if(!is_type(this.parser.first_follow)){
+      console.log("expected type");
+      process.exit(1);
+    }
+    let type = this.tesprs.type() as SymbolType;
+
+    if(!is_iden(this.parser.first_follow)){
+      console.log("expected iden");
+      process.exit(1);
+    }
+    const fcname = this.parser.next().val!;
+    //create function symbol node
+    let symnode: Nullable<ISymbol> = null
+
+    symnode = new Sym(fcname)
+    symnode.to_pub()
+
+    if(!is_lprns(this.parser.first_follow)){
+      console.log("expected (");
+      process.exit(1);
+    }
+    this.parser.next();
+    //get flist
+    const prmc = this.tesprs.flist(0,true);
+    //
+    symnode.set_prms_count(prmc)
+    const token = this.parser.first_follow;
+
+    if(!is_rprns(token)){
+      console.log("expected )");
+      process.exit(1);
+    }
+    //
+    this.parser.next();
+    //
+    symnode.set_type(type as SymbolType)
+    this.parser.crntstbl.add_node(symnode)
+
+    this.arg_passanger(symnode);
+    
+  }
+  arg_passanger(symnode:ISymbol):void{
+    symnode.init_subtable(this.parser.crntstbl)
+    symnode.subTables!.join(this.tesprs.parser.func_arg)
+    this.parser.func_arg.clear()
+  }
   body(): void {
-    //skip begin body token
-    this.parser.next()
-    //got to signle scop function decleartion
-    this.parser.goto_scop(keywords.FUNCTION)
-    /***
-     *
-     * ass-body parser generation
-     *
-     ***/
-    //skip if  showed 'end' token
-    this.parser.token_skipper(this.skipper_checker)
-    //out of scop
-    this.parser.out_scop()
+    //
+    this.parser.capsolate(keywords.BEGIN,keywords.END,()=>{
+        /***
+         *
+        * ass-body parser generation
+        *
+        ***/
+        //skip if  showed 'end' token
+        this.parser.token_skipper(()=>this.skipper_checker()) 
+    })
   }
   skipper_checker(): boolean {
-    const [t1, t2, t3] = this.parser.follow(3)
+    const [t1, t2] = this.parser.follow(3)
     //end of check
-    if (is_end(t1)) return false
+    if (is_end(t1)) return true
     //if person forget end blcok and then see type token
-    if (is_type(t1)) return false
+    if (is_type(t1)  && is_iden(t2)) return true
+    //
+    if (is_iden(t1)  && is_lprns(t2)) return true
     //( for first toen
-    if (is_rprns(t1) || is_lprns(t1)) return false
-    //( for second & three token
-    if (is_rprns(t2) || is_lprns(t3)) return true
+    if (is_rprns(t1) || is_lprns(t1)) return true
+
     //skip
     return false
   }

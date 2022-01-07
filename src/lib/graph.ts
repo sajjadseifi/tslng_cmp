@@ -1,6 +1,6 @@
 import colros from 'colors'
-import { Iloging } from 'src/graph-module'
-import { strble_mode_parse } from 'src/parser/types'
+import { Iloging } from '../graph-module'
+import { strble_mode_parse } from '../parser/types'
 import { Nullable } from '../types'
 import { is_null } from '../utils'
 

@@ -60,8 +60,8 @@ export const is_begin = (token: IToken) => token && token.val === keywords.BEGIN
 export const is_end = (token: IToken) => token && token.val === keywords.END
 
 export const is_eof = (token: IToken) => token && token.val === keywords.EOF
-export const is_lprns = (token: IToken) => token && token.val === '('
-export const is_rprns = (token: IToken) => token && token.val === ')'
+export const is_lprns = (token: IToken) => token && token.val == '('
+export const is_rprns = (token: IToken) => token && token.val ==')'
 
 export const is_keyword = (token: IToken) =>
   is_of(token) ||

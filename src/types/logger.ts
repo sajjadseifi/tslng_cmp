@@ -1,5 +1,6 @@
-import { IModule } from 'src/graph-module'
+import { IModule } from '../graph-module'
 import { IPosition, IToken, SymbolType } from '.'
+import { EpxrType } from './parser'
 export interface LogingAquiredStatus {
   warning: boolean
   syntax: boolean
@@ -45,4 +46,6 @@ export interface ILogger {
   not_found_start_func(starter?: string): void
   word_not_iden(word: string): void
   expect_sem_error(): void
+  incompatible_oprands():void
+  mismatch_type_conditional(tpye1:EpxrType,typ2:EpxrType):void
 }

@@ -1,8 +1,7 @@
---imp "./1.tes"
---imp "./3.tes"
 imp "./shyn48.tes"
 
-function find(Array A,Int x) returns Int:
+function find(Array A,Int x) 
+returns Int:
     val Int n;
     val Int b;
     i = 0;
@@ -16,14 +15,14 @@ function find(Array A,Int x) returns Int:
 end
 function man() returns Int:
     val Array A;
+    val Array B;
     val Int a;
-    A = createArray(3);
-    b = 3;
-    A[1] = 8;
-    A[2] = 5;
-    b = sum (A,a,a);
-    printInt(find(A, a));
-    printInt(find(A));
+    a = sum(A,a,a);
+    a= a + 10;
+    find(A, a)
+    find(B)
     printInt(find(a, A));
+    B = a > 10 ? a : A;
+    A = createArray(3,0);
     return A;
 end

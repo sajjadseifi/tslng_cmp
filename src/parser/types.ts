@@ -13,7 +13,7 @@ import {
 import { EpxrType } from '../types/parser'
 import { Parser } from './parser'
 import { PME } from './PME'
-import { Compiler, SharedCompier } from 'src/compiler'
+import { Compiler, SharedCompier } from '../compiler'
 
 export enum StatusIDEN {
   FREE,
@@ -43,9 +43,11 @@ export interface IParser {
 }
 
 export class SubParser implements IParser {
-  parser: Parser
-  constructor(compiler: SharedCompier) {
-    this.parser = compiler.parser as Parser
+  
+  constructor(public compiler: SharedCompier) {
+  }
+  get parser():Parser{
+    return this.compiler.parser as Parser
   }
   parse(): void {
     throw new Error('You Need Impliments Parse Method In Child Of SubParser.')
@@ -80,6 +82,7 @@ export interface IParserBase {
   set_symbols(symbols: ISymbolTable): void
   root: ISymbolTable
   imports: string[]
+  can_run:boolean
 }
 //recursive diecent
 export interface IParserRD {
@@ -89,7 +92,7 @@ export interface IParserRD {
   stmt(): boolean //
   defvar(): boolean //
   expr(): EpxrType //
-  flist(size: number): number //
+  flist(size: number,saved_arg?:boolean): number //
   clist(): number //
   type(): SymbolType | IToken //
   num(): IToken //

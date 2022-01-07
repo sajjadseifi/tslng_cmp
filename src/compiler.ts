@@ -22,6 +22,8 @@ import { zero } from './utils'
 import { IParserBase, strble_mode_parse } from './parser/types'
 import colors from 'colors'
 import { IParserGenerator, ParserGenerator } from './parser-generator'
+import { ErrorCorrection } from './error-correction'
+import { IErrorCorrection } from './types/error-correction'
 export interface ICompiler {
   run(): void
 }
@@ -39,15 +41,19 @@ export class Compiler implements ICompiler, SharedCompier {
   root: ISymbolTable
   suggest!: ISuggestion
   tpath: IPathTes
+  ec!:IErrorCorrection
   private completed_mods: number
   private switcher: IParserGenerator
+  showing_log=false
   constructor() {
     this.completed_mods = 0
+    // this.showing_log = true
     this.tpath = new PathTes(_defalut.base_route)
     this.congigure = new ConfigurManagemnt(this.tpath)
     this.root = new SymbolTable()
     this.gm = new Graph(undefined, true)
     this.switcher = new ParserGenerator(this)
+
   }
   add_to_complet() {
     this.completed_mods++
@@ -89,9 +95,11 @@ export class Compiler implements ICompiler, SharedCompier {
     const { logger: lg } = this
     //Suggestion
     this.suggest = new Suggestion(this, lg)
+    //
+    this.ec = new ErrorCorrection(this, lg)
     //Parser
-    const { suggest: sg, root: r } = this
-    this.parser = new Parser(l, cnf, lg, sg, r, false)
+    const { suggest: sg, root: r,ec } = this
+    this.parser = new Parser(l, cnf, lg, sg,ec, r, this.showing_log)
   }
   //DFS
   async load_mods_dfs(root: IGraphNode<IModule>): Promise<void> {
@@ -162,14 +170,13 @@ export class Compiler implements ICompiler, SharedCompier {
   }
   checking_after_mode_travel(node: IGraphNode<IModule>): void {
     //if is parse mode loged suggestion
-    // console.log(node.value.is_pre)
-    // if (node.value.is_pre) {
-    //   //root not used function decleared
-    //   this.suggest.declared_and_not_used(node)
-    //   // if (!this.parser.can_run) {
-    //   //   this.parser.logger.not_found_start_func()
-    //   // }
-    // }
+    if (node.value.is_parse) {
+      //root not used function decleared
+      this.suggest.declared_and_not_used(node.value.symbols)
+      if (!this.parser.can_run && node == this.gm.root) {
+        this.logger.not_found_start_func()
+      }
+    }
   }
   importable_path(parrent: IGraphNode<IModule>): void {
     const dir = parrent.value.path.dir
@@ -225,11 +232,6 @@ export class Compiler implements ICompiler, SharedCompier {
     this.gm.un_visit_all(this.gm.root!)
     // this.post_order_mod(this.gm.root!)
     while (true) {
-      console.log({
-        cm: this.completed_mods,
-        glen: this.gm.len
-      })
-
       if (this.completed_mods >= this.gm.len) break
 
       this.gm.traversal(POST_ORDER, this.module_handler)

@@ -26,7 +26,6 @@ import { IParserBase, SubParser, SubParserTT } from './types'
 
 export class Parser implements IParserBase {
   symtbl: ISymbolTable
-  ec: IErrorCorrection
   focuses: IFocusList
   crntstbl: ISymbolTable
   func_arg: ISymbolTable
@@ -41,11 +40,11 @@ export class Parser implements IParserBase {
     public config: IConfig,
     public logger: ILogger,
     public suggest: ISuggestion,
+    public ec: IErrorCorrection,
     root: ISymbolTable,
     is_lexlog?: boolean
   ) {
     this.func_arg = new SymbolTable()
-    this.ec = new ErrorCorrection(this, this.logger)
     this.focuses = new FocusList()
     this.symtbl = root
     this.crntstbl = root
@@ -128,7 +127,7 @@ export class Parser implements IParserBase {
     return this.crntstbl.symbols
   }
   token_skipper(cb: () => boolean): void {
-    while (cb()) this.next()
+    while (!cb()) this.next()
   }
   loging_lexer() {
     this.log_lex = true
@@ -139,7 +138,7 @@ export class Parser implements IParserBase {
       //log token
       if (this.log_lex) console.log(tok.val)
       //exit app
-      if (tokChecker.is_eof(tok)) process.exit(0)
+      if (tokChecker.is_eof(tok)) throw tok
 
       return tok
     }
@@ -157,29 +156,7 @@ export class Parser implements IParserBase {
       }
     return res as IToken[]
   }
-  func_scop = (scop_key: any) => {
-    return scop_key === keywords.FUNCTION && this.crntstbl.last!
-  }
-  out_scop = () => {
-    this.crntstbl = this.crntstbl.parrent!
-    // if parser
-    // this.crntstbl.del_node(this.crntstbl.last)
-  }
-  goto_scop = (scop_key: string | number) => {
-    //get scop node
-    const symscop: ISymbol = this.func_scop(scop_key)
-      ? this.crntstbl.last!
-      : new Sym(scop_key, sym.NIL)
-    //if scop not a function must init subtable to use new scop
-    if (!symscop.is_func) {
-      symscop.init_subtable(this.crntstbl)
-    }
-    this.crntstbl = symscop.subTables!
-    //join arg of eny things to first table for function , foreach or ...
-    this.crntstbl.join(this.func_arg)
-    //clear func_arg to
-    this.func_arg.clear()
-  }
+
 
   side_capsolate(
     exp: string,

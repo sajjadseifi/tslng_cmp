@@ -186,7 +186,10 @@ export class SymbolTable implements ISymbolTable {
   find_in_scop(key: string): SymNulable {
     let sym = null
     for (let i = this.symbols.length - 1; i > -1; i--)
-      if ((sym = this.symbols[i]).key === key) return sym
+    {
+      sym = this.symbols[i]
+      if (sym.key === key) return sym
+    }
 
     return null
   }

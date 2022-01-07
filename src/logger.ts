@@ -16,6 +16,7 @@ import colors from 'colors/safe'
 import { StatusIDEN } from './parser/types'
 import { IModule } from './graph-module'
 import { IPath, IPathTes } from './lib/path'
+import { EpxrType } from './types/parser'
 
 const includ_qute = (str: string = '', color: any) => {
   return `'${color(str)}'`
@@ -86,12 +87,14 @@ export class Logger implements ILogger {
     this.status = status
   }
   syntax_err(message: string, pos?: IPosition, strict: boolean = false): void {
+    if(!this.modl?.is_pre) return;
+    //
     this.title_with_status(
-      strs.syntax_error, //
-      LoggerStatus.SYNTAX, //
-      colors.cyan, //
-      message, //
-      pos //
+      strs.syntax_error, 
+      LoggerStatus.SYNTAX,
+      colors.cyan,
+      message,
+      pos 
     )
   }
   semantic_err(
@@ -133,6 +136,13 @@ export class Logger implements ILogger {
     const idc = iden_qute(str)
     this.semantic_err(`can not find ${idc} function to start program`)
   }
+  mismatch_type_conditional(tpye1:EpxrType,tpye2:EpxrType):void
+  {
+    const t1c = type_qute(type_str(tpye1)) 
+    const t2c = type_qute(type_str(tpye2)) 
+    this.semantic_err(`mismatch type conditional expr,'${t1c}' not equal to '${t2c}' `);
+
+  }
   type_mismatch_arg_func(
     arg_pos: number,
     func_name: string,
@@ -171,7 +181,7 @@ export class Logger implements ILogger {
   identifier_not_array(tok: string | IToken): void {
     const iden = iden_qute(typeof tok === 'string' ? tok : tok.val!)
     const arr_type = type_qute('Array')
-    this.log_with_line(`The identifier ${iden} should be in type ${arr_type}`)
+    this.semantic_err(`The identifier ${iden} should be in type ${arr_type}`);
   }
   mismatch_type(
     tok1: string,
@@ -299,5 +309,10 @@ export class Logger implements ILogger {
     const idc = iden_qute(iden)
 
     this.log_with_line(`returning a value with wrong type from ${idc}!`)
+  }
+  incompatible_oprands():void
+  {
+    if(this.modl?.is_parse)
+      this.semantic_err('incompatible operands!')
   }
 }

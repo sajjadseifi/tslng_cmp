@@ -1,4 +1,4 @@
-import { StatusIDEN } from 'src/parser/types'
+import { StatusIDEN } from '../parser/types'
 import { SymNulable } from '.'
 
 export interface IFocuse {

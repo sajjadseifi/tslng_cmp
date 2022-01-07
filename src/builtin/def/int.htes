@@ -1,6 +1,3 @@
 
 -- printing 'n' argument
-printInt(Int n) returns Nil
-{
-    --assembely code
-}
+Nil printInt(Int n);

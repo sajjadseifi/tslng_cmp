@@ -7,6 +7,7 @@ import { Token } from './token'
 import { LexicalError } from './error'
 import { NULL } from './constants/val'
 import { APHA_NUMERIC_UNDE, SPECIAL_CHAR } from './constants/pattern'
+import { is_eof } from './utils/token-cheker'
 export class Lexer implements ILexer, ILexerAtomata {
   lex: Lex
   constructor(public fd: number, index: number) {
@@ -22,7 +23,13 @@ export class Lexer implements ILexer, ILexerAtomata {
     return this.lex.pos
   }
   get finished(): boolean {
-    return this.lex.eof
+    if(this.lex.eof) return true
+
+    const [tokeof] = this.follow(1);
+    
+    if(tokeof instanceof Token &&  is_eof(tokeof)) return true
+
+    return false
   }
 
   skiper_signle_char(): void {
@@ -152,12 +159,11 @@ export class Lexer implements ILexer, ILexerAtomata {
     if (this.lex.tmp == '--' || this.lex.tmp == '/*') {
       return this.init()
     }
-    // console.log(this.char_index, this.lex.tmp)
     //Itoken
     return new Token(tok_type as TokenType, this.lex.tmp, this.lex.pos)
   }
   eof(): IToken {
-    return new Token(TokenType.EOF, undefined, this.lex.pos)
+    return new Token(TokenType.EOF, keywords.EOF, this.lex.pos)
   }
   comment_line(): void {
     this.lex.get_char(false)
@@ -271,6 +277,7 @@ export class Lexer implements ILexer, ILexerAtomata {
     }
     //cant 2 cahrs token
     if (
+      c == '?' ||
       c == '(' ||
       c == ')' ||
       c == '{' ||

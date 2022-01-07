@@ -1,12 +1,7 @@
 --This is a sample code in the TSLANG language 
  
-function ali () returns Nil: 
-    val Array a;
-    sum(a,2)
-    al(a,2,3)
-    sum(1,2,3)
-end
-function sum (Array a, Int b, Int c) returns Int: 
+
+pub function sum (Array a, Int b, Int c) returns Int: 
  val Int s; 
  s = b + c; 
  if (s >= 2): 
@@ -20,4 +15,9 @@ function sum (Array a, Int b, Int c) returns Int:
  return s; 
 end
 
-function ali () returns Nil: end
+function ali () returns Nil: 
+    val Array a;
+    sum(a,2)
+    al(a,2,3)
+    sum(1,2,3)
+end
