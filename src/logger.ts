@@ -5,6 +5,7 @@ import {
   IPosition,
   ISymbol,
   IToken,
+  KeySymbol,
   LogingAquiredStatus,
   Nullable,
   SymbolType
@@ -181,7 +182,16 @@ export class Logger implements ILogger {
   identifier_not_array(tok: string | IToken): void {
     const iden = iden_qute(typeof tok === 'string' ? tok : tok.val!)
     const arr_type = type_qute('Array')
+
     this.semantic_err(`The identifier ${iden} should be in type ${arr_type}`);
+  }
+  ret_type_mismatch(fname:KeySymbol,ftype:number,badtype:number):void{
+    
+    const fn = iden_qute(fname+"");
+    const ft = type_qute(type_str(ftype));
+    const rt = type_qute(type_str(badtype));
+    this.semantic_err(`return type of function ${fn} is ${ft} not ${rt}`);
+
   }
   mismatch_type(
     tok1: string,

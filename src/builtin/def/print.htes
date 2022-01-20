@@ -1,3 +1,6 @@
 
---get int value
-Int getInt();
+-- printing 'n' argument
+Nil printInt(Int n):
+    call iput,[n]
+    ret
+end

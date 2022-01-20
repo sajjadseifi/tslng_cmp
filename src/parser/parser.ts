@@ -112,6 +112,8 @@ export class Parser implements IParserBase {
     this.logger.set_module(node.value)
     this.logger.reset()
     this.set_symbols(node.value.symbols)
+    this.can_run = false;
+    this.focuses.clear();
     //
     this.module_node = node
   }

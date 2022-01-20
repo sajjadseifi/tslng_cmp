@@ -1,2 +1,5 @@
 -- exit app with code in argument
-Int exit(Int n);
+Int exit(Int n):
+    jmp _exit:
+    ret
+end

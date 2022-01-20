@@ -15,8 +15,10 @@ export interface IFocusList {
   free(key: any): void
   foreach(symbol: SymNulable): void
   defind(symbol: SymNulable): void
+  last_with(stts:StatusIDEN): SymNulable
   push(symbol: SymNulable, status: StatusIDEN): void
   pop(): void
   get focus(): IFocuse | null
   print(): void
+  clear():void
 }

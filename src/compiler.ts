@@ -3,7 +3,7 @@ import { ConfigurManagemnt, _defalut } from './config'
 import { ILexer } from './types/lexer'
 import { Lexer } from './lexer'
 import { Parser } from './parser'
-import { read_async } from './io'
+import { create_file_or_clear, FD, read_async } from './io'
 import { ILogger, ISymbolTable, Nullable } from './types'
 import { Logger } from './logger'
 import { SymbolTable } from './symbol'
@@ -17,18 +17,21 @@ import {
   SearchMode,
   TraversalExcutor
 } from './lib/graph'
-import { FileExtention, IPathTes, Path, PathTes } from './lib/path'
+import { FileExtention, IPath, IPathTes, Path, PathTes } from './lib/path'
 import { zero } from './utils'
 import { IParserBase, strble_mode_parse } from './parser/types'
 import colors from 'colors'
 import { IParserGenerator, ParserGenerator } from './parser-generator'
 import { ErrorCorrection } from './error-correction'
 import { IErrorCorrection } from './types/error-correction'
+import { IR } from './ir/IR'
+import { TSIR } from './ir/tes-IR'
 export interface ICompiler {
   run(): void
 }
 export interface SharedCompier {
   parser: IParserBase
+  ir?:IR
 }
 
 const { POST_ORDER } = SearchMode
@@ -45,6 +48,8 @@ export class Compiler implements ICompiler, SharedCompier {
   private completed_mods: number
   private switcher: IParserGenerator
   showing_log=false
+  ir!:IR
+  obj_list:{fd:FD,path:IPath}[];
   constructor() {
     this.completed_mods = 0
     // this.showing_log = true
@@ -53,7 +58,7 @@ export class Compiler implements ICompiler, SharedCompier {
     this.root = new SymbolTable()
     this.gm = new Graph(undefined, true)
     this.switcher = new ParserGenerator(this)
-
+    this.obj_list=[];
   }
   add_to_complet() {
     this.completed_mods++
@@ -101,6 +106,15 @@ export class Compiler implements ICompiler, SharedCompier {
     const { suggest: sg, root: r,ec } = this
     this.parser = new Parser(l, cnf, lg, sg,ec, r, this.showing_log)
   }
+  async create_object_file(path:IPath)
+  {
+    const fd = await create_file_or_clear(this.tpath.path_to_str(path) + ".ts");
+    console.log(fd);
+    this.obj_list.push({fd,path});
+  }
+  find_obj_fd(path:IPath){
+    return this.obj_list.find(ob=>ob.path==path)?.fd || -1
+  }
   //DFS
   async load_mods_dfs(root: IGraphNode<IModule>): Promise<void> {
     if (root === null) return
@@ -116,9 +130,9 @@ export class Compiler implements ICompiler, SharedCompier {
       await this.load_mods_dfs(node)
     }
   }
+
   post_order_mod(root: IGraphNode<IModule>): void {
     if (root === null) return
-
     root.visit()
     for (const node of root.children) {
       //Check the node if it was not visited
@@ -134,7 +148,10 @@ export class Compiler implements ICompiler, SharedCompier {
   //
   async_module_handler: AsyncTraversalExcutor<IModule> = async (node) => {
     //opeining a file to start
-    if (node.value.is_start) await this.load_file_node(node)
+    if (node.value.is_start){  
+      await this.load_file_node(node)
+      await this.create_object_file(node.value.path)
+    } 
     //syncron oprations
     return this.module_handler(node)
   }
@@ -143,13 +160,24 @@ export class Compiler implements ICompiler, SharedCompier {
     //completing level in lexer
     this.cheack_and_complet(node)
     //seting node on parser layout for get symbols on childs import node
+    
     this.parser.set_module_node(node)
+    
     //run on mode seleted
     this.switcher.switching(node)
+    
     console.log(colors.green(`:: ${strble_mode_parse[node.value.mode]} ::`))
     node.log()
+    //ir switcher
+    const tsfd = this.find_obj_fd(node.value.path);
+    if(this.ir)
+    this.ir.set_tsfd(tsfd);
+    else 
+    this.ir = new TSIR(tsfd); 
+
     const SPT = this.switcher.parser
     const SP = SPT ? new SPT(this) : undefined
+    
     this.parser.execute(SP)
     //resposne after parser executatuon
     this.checking_after_mode_travel(node)
@@ -172,6 +200,7 @@ export class Compiler implements ICompiler, SharedCompier {
     //if is parse mode loged suggestion
     if (node.value.is_parse) {
       //root not used function decleared
+      
       this.suggest.declared_and_not_used(node.value.symbols)
       if (!this.parser.can_run && node == this.gm.root) {
         this.logger.not_found_start_func()
@@ -225,6 +254,7 @@ export class Compiler implements ICompiler, SharedCompier {
     this.builtin_mod(root!)
     //[loading all tree file in to graph & then pruning]
     await this.load_mods_dfs(root!)
+    console.log(this.obj_list);
   }
   //
   compile() {

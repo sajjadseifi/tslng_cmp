@@ -23,6 +23,12 @@ export class FocusList implements IFocusList {
   constructor() {
     this.items = []
   }
+  last_with(stts:StatusIDEN): SymNulable{
+    return this.items.reverse().find(f=>f.status === stts)?.sym;
+  }
+  clear(): void {
+    this.items=[]
+  }
   print() {
     this.items.map((it) => console.log(it.sym?.key, it.status))
   }

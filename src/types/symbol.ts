@@ -28,6 +28,8 @@ export interface ISymbol {
   add_symbol(sym: ISymbol): void
   init_subtable(parrent: ISymbolTable): void
   same(key: string): boolean
+  set_reg(reg:number):void
+  get get_reg():number
 }
 export interface ISymbolTable {
   parrent?: ISymbolTable // if null this mean root

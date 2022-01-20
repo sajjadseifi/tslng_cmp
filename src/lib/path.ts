@@ -33,6 +33,7 @@ export class Path implements IPath {
     this.file = path.basename(_path)
     this.suffix = path.extname(_path) as FileExtention
   }
+  
   get is_tes() {
     return this.suffix === FileExtention.TES
   }

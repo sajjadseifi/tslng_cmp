@@ -1,9 +1,17 @@
 
 -- creating array with size of 'n'
-Array createArray(Int n);
+
+Array createArray(Int n):
+    mov r0,0
+    st  r0,8
+    add r0,r0,[n]
+    call mem, r0
+    ret
+end
 
 -- get length of array with Array  
-Int arrayLength(Array arr):
-    $t0 = 0
-    $t1 = t0
+
+Int arrayLength(Array a):
+    ld r0,[a]
+    ret
 end

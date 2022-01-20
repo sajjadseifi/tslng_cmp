@@ -1,6 +1,7 @@
 import { IModule } from '../graph-module'
 import { IPosition, IToken, SymbolType } from '.'
 import { EpxrType } from './parser'
+import { KeySymbol } from './symbol'
 export interface LogingAquiredStatus {
   warning: boolean
   syntax: boolean
@@ -48,4 +49,5 @@ export interface ILogger {
   expect_sem_error(): void
   incompatible_oprands():void
   mismatch_type_conditional(tpye1:EpxrType,typ2:EpxrType):void
+  ret_type_mismatch(fname:KeySymbol,ftype:number,badtype:number):void
 }

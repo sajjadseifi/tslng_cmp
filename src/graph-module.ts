@@ -11,6 +11,7 @@ export interface IModule {
   complex: ILexProps
   path: IPath
   mode: ParserMode
+  tsfd:number
   get is_start(): boolean
   get is_imp(): boolean
   get is_pre(): boolean
@@ -21,7 +22,8 @@ export interface IModule {
   update_complex(): void
   set_complex(fd: FD, index: number): void
   set_plex(fd: FD, index: number): void
-  set_mode: (mode: ParserMode) => void
+  set_mode(mode: ParserMode) : void
+  set_tsfd(fd:number):void
   next_mode(): void
   prev_mode(): void
   log(): string
@@ -31,13 +33,18 @@ export class Module implements IModule, Iloging {
   symbols: ISymbolTable
   plex!: ILexProps
   complex!: ILexProps
+  
   constructor(
     public path: IPath, //
-    public mode: ParserMode = ParserMode.SRART
+    public mode: ParserMode = ParserMode.SRART,
+    public tsfd: number=-1
   ) {
     this.symbols = new SymbolTable()
     this.set_complex(-1, -1)
     this.update_plex()
+  }
+  set_tsfd(tsfd: number): void {
+    this.tsfd = tsfd;
   }
   log(): string {
     return `${this.mode}`

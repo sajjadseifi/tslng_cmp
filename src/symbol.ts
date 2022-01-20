@@ -17,6 +17,7 @@ export class Sym implements ISymbol {
   position: IPosition
   is_pub?: boolean
   private _used_sym_number: number
+  private reg;
   constructor(
     public key?: string | Scop,
     public type?: SymbolType,
@@ -26,6 +27,13 @@ export class Sym implements ISymbol {
     this._used_sym_number = 0
     this.set_prms_count(param_counts)
     this.position = new Position(-1, -1)
+    this.reg = -1;
+  }
+  set_reg(reg: number): void {
+    this.reg= reg;
+  }
+  get get_reg(): number {
+    return this.reg
   }
   get is_used(): boolean {
     return this._used_sym_number > 0

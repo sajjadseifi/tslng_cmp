@@ -5,28 +5,16 @@ import { keywords } from '../constants'
 import {
   is_begin,
   is_end,
-  is_eof,
   is_iden,
   is_lprns,
   is_rprns,
-  is_sem,
-  is_spec,
   is_type
 } from '../utils/token-cheker'
 import { TesParser } from './tes-parser'
 import { IParser, SubParser } from './types'
-export class HeadeParser extends SubParser implements IParser {
-  private tesprs:TesParser
-  constructor(compiler: SharedCompier)
-  {
-    super(compiler)
+import { read_range } from '../io'
+import { TSIR } from 'src/ir/tes-IR'
 
-    this.tesprs = new TesParser(this.compiler as Compiler)
-
-  }
-  parse(): void {
-    this.prog()
-  }
   /*
     prog := func |
             func prog |
@@ -40,6 +28,23 @@ export class HeadeParser extends SubParser implements IParser {
     ass-body := 
 
   */
+export class HeadeParser extends SubParser implements IParser {
+  private tesprs:TesParser
+  private cmp:Compiler
+  private ir:TSIR
+  constructor(compiler: SharedCompier)
+  {
+    super(compiler)
+    
+    this.cmp= this.compiler as Compiler
+
+    this.tesprs = new TesParser(this.cmp)
+    this.ir = this.cmp.ir as TSIR 
+  }
+  parse(): void {
+      this.prog()
+  }
+
   prog(): void {
     if (this.parser.lexer.finished) return
     this.func()
@@ -49,7 +54,17 @@ export class HeadeParser extends SubParser implements IParser {
   func(): void {
     this.fdec()
     //body stmt for use assembely code
-    if (is_begin(this.parser.first_follow)) this.body()
+    if (is_begin(this.parser.first_follow)){
+      const func = this.parser.crntstbl.last! 
+
+      this.ir.proc(func.key as string)
+      
+      let code = this.body()
+      //add arg description
+      code = this.arg_to_reg(func,code)
+      //write builtin code
+      this.ir.nwrite(code);
+    }
     //
     else if (this.parser.in_follow(';')) this.parser.next()
     //
@@ -57,7 +72,6 @@ export class HeadeParser extends SubParser implements IParser {
   }
   fdec(): void {
     if(this.parser.lexer.finished) return;
-
 
     if(!is_type(this.parser.first_follow)){
       console.log("expected type");
@@ -100,23 +114,25 @@ export class HeadeParser extends SubParser implements IParser {
     this.arg_passanger(symnode);
     
   }
-  arg_passanger(symnode:ISymbol):void{
-    symnode.init_subtable(this.parser.crntstbl)
-    symnode.subTables!.join(this.tesprs.parser.func_arg)
-    this.parser.func_arg.clear()
-  }
-  body(): void {
+  body(): string {
     //
+    let code = '';
     this.parser.capsolate(keywords.BEGIN,keywords.END,()=>{
-        /***
-         *
-        * ass-body parser generation
-        *
-        ***/
-        //skip if  showed 'end' token
-        this.parser.token_skipper(()=>this.skipper_checker()) 
+      const start = this.parser.lexer.char_index + 1
+      /***
+       *
+       * ass-body parser generation
+       *
+       ***/
+      //skip if  showed 'end' token
+      this.parser.token_skipper(()=>this.skipper_checker()) 
+      
+      const end = this.parser.lexer.char_index + 1
+      code = read_range(this.parser.modules.plex.fd,start,end);
     })
+    return code;
   }
+
   skipper_checker(): boolean {
     const [t1, t2] = this.parser.follow(3)
     //end of check
@@ -131,4 +147,23 @@ export class HeadeParser extends SubParser implements IParser {
     //skip
     return false
   }
+  arg_passanger(symnode:ISymbol):void{
+    symnode.init_subtable(this.parser.crntstbl)
+    symnode.subTables!.join(this.tesprs.parser.func_arg)
+    this.parser.func_arg.clear()
+  }
+  arg_to_reg(func:ISymbol,code?:string):string{
+    const syms = func.subTables!.symbols
+    for (let c = 0; c < func.param_counts; c++) {
+      const name = `[${syms[c].key! as string}]`;
+      const reg = syms[c].get_reg;
+      if(code)
+        code = code.split(name).join(this.ir.sreg(reg))
+      else 
+        this.ir.ntwrite(`${name}=${reg}`);
+    }
+
+    return code || ""
+  }
+  
 }

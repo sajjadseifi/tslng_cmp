@@ -1,3 +1,5 @@
-
--- printing 'n' argument
-Nil printInt(Int n);
+--get int value
+Int getInt():
+    call iget,r0
+    ret
+end

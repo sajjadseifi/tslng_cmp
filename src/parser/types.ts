@@ -14,6 +14,7 @@ import { EpxrType } from '../types/parser'
 import { Parser } from './parser'
 import { PME } from './PME'
 import { Compiler, SharedCompier } from '../compiler'
+import { ConceptualValues, ExprCV } from './tes-parser'
 
 export enum StatusIDEN {
   FREE,
@@ -91,7 +92,7 @@ export interface IParserRD {
   body(): boolean //
   stmt(): boolean //
   defvar(): boolean //
-  expr(): EpxrType //
+  expr(): ConceptualValues<EpxrType,ExprCV | null> //
   flist(size: number,saved_arg?:boolean): number //
   clist(): number //
   type(): SymbolType | IToken //

@@ -65,12 +65,14 @@ export class ErrorCorrection implements IErrorCorrection {
     }
   }
   expr_array_start_bracket(symbol: ISymbol, type: SymbolType): boolean {
-    if (this.parser.in_follow('[') && !same_type(type, sym.ARRAY)) {
-      this.logger.identifier_not_array(symbol.key!.toString())
+    
+    if (!(this.parser.in_follow('[') && !same_type(type, sym.ARRAY))) 
       return true
-    }
+    
+    if(this.parser.modules.is_parse)
+      this.logger.identifier_not_array(symbol.key!.toString())
 
-    return false
+    return true
   }
   expr_array_index_type(symnode: ISymbol, type: SymbolType): void {
     const val = symnode && typeof symnode.key === 'string' ? symnode.key : ''
@@ -163,7 +165,8 @@ export class ErrorCorrection implements IErrorCorrection {
     this.foreach_after_of()
   }
   foreach_after_of() {
-    this.foreach_after_expr(new TesParser(this.compiler).expr())
+    const exp = new TesParser(this.compiler).expr()
+    this.foreach_after_expr(exp.type)
   }
   foreach_in_expr_type(exist: EpxrType): void {
     if (typeCheking.is_empty(exist)) {
@@ -254,8 +257,6 @@ export class ErrorCorrection implements IErrorCorrection {
 
     this.parser.capsolate('(', ')', center, false)
 
-    //out of function expresion
-    this.parser.focuses.pop()
   }
   /* Body Begin or not with token ':'*/
   body_begin(scop: number, keyword: string): void {

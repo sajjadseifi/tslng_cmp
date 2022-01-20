@@ -1,8 +1,21 @@
 import { Compiler, ICompiler } from './compiler'
-
+// import fs from 'fs'
+// import { write } from './io'
 export const main = () => {
   const compiler: ICompiler = new Compiler()
   compiler.run()
+
+  // fs.open("x.ts","w+",(err,fd)=>{
+  //   console.log(err,fd);
+  //   fs.writeFile(fd,"",{},()=>{});
+
+  //   write(fd,"proc main:");
+  //   write(fd,"\r\n\tadd r0,r1,r1");
+  //   write(fd,"\r\n\tadd r1,r1,r1");
+  //   write(fd,"\r\n\tsub r2,r0,r5");
+  //   write(fd,"\r\n\tret");
+  // })
+
 }
 
 // let complex = 0
