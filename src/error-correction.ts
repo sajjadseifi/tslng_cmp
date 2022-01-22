@@ -15,7 +15,7 @@ import {
 } from './utils/token-cheker'
 import { same_type } from './utils/type-checking'
 import { Parser } from './parser/parser'
-import { TesParser } from './parser/tes-parser'
+import { ExprCV, TesParser } from './parser/tes-parser'
 import { Compiler } from './compiler'
 
 export class ErrorCorrection implements IErrorCorrection {
@@ -241,31 +241,37 @@ export class ErrorCorrection implements IErrorCorrection {
 
     return tprs.type() as SymbolType
   }
-  private caps_clist(exist: boolean, prmc: number, val: string) {
-    const c = new TesParser(this.compiler).clist(0)
+  private caps_clist(exist: boolean, prmc: number, val: string,regs:ExprCV[]) {
+    const c = new TesParser(this.compiler).clist(0,regs)
     const isparse = this.parser.module_node?.value.is_parse
     //
     if (!isparse || !exist || c === prmc) return
     //
     this.parser.logger.expected_arg(val, prmc, c)
   }
-  expr_iden_is_func(iden: ISymbol, exist: boolean): void {
+  expr_iden_is_func(iden: ISymbol, exist: boolean): ExprCV[] {
+    const regs : ExprCV[] = [];
     const val = `${iden.key}`
     const prmc = exist === false ? 0 : iden.param_counts
 
-    const center = () => this.caps_clist(exist, prmc, val)
+    const center = () => this.caps_clist(exist, prmc, val,regs)
 
-    this.parser.capsolate('(', ')', center, false)
+    this.parser.capsolate('(', ')',center, false)
 
+    return regs
+  }
+  forget_sem():void{
+    //ignored semicolon
+    //if semicolon not defind it doesnt matter
+    if (this.parser.in_follow(';')) this.parser.next()
+    else this.parser.logger.expect_sem_error()
   }
   /* Body Begin or not with token ':'*/
   body_begin(scop: number, keyword: string): void {
     const tsprs = new TesParser(this.compiler)
-    if (this.parser.in_follow(':') == false) {
+    if (!this.parser.in_follow(':')) {
       this.parser.logger.keyword_block_body(keyword, true)
-      tsprs.new_scop_stmt(scop, keyword)
-    } else {
-      tsprs.body(scop, keyword)
-    }
+    } 
+    tsprs.new_scop_stmt(scop, keyword)
   }
 }

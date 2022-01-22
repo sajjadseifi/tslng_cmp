@@ -4,8 +4,9 @@ import { glob } from 'glob'
 
 export const BASE_ROUTE = './'
 export enum FileExtention {
+  TS=".ts",
+  TES = '.tes',
   HTES = '.htes',
-  TES = '.tes'
 }
 
 export interface IPath {
@@ -14,6 +15,7 @@ export interface IPath {
   suffix: FileExtention
   get is_tes(): boolean
   get is_htes(): boolean
+  get is_ts(): boolean
 }
 
 export interface IPathTes {
@@ -21,6 +23,7 @@ export interface IPathTes {
   get base(): string
   path_to_dir(_path: IPath, full?: boolean): string
   path_to_str(_path: IPath, full?: boolean): string
+  path_str_not_ext(_path: IPath, full?: boolean): string
   path_in_base(): string
   nested_files(dir: string, full?: boolean): string[]
 }
@@ -30,22 +33,29 @@ export class Path implements IPath {
   suffix: FileExtention
   constructor(_path: string) {
     this.dir = path.dirname(_path).normalize()
-    this.file = path.basename(_path)
+    this.file =  path.basename(_path).split('.').slice(0, -1).join('.')
     this.suffix = path.extname(_path) as FileExtention
   }
-  
+
+  get is_ts() {
+    return this.suffix === FileExtention.TS
+  }
   get is_tes() {
     return this.suffix === FileExtention.TES
   }
   get is_htes() {
     return this.suffix === FileExtention.HTES
   }
+
 }
 
 export class PathTes implements IPathTes {
-  constructor(public base_route: string = BASE_ROUTE) {
+  base_route:string[]
+  constructor(...base_route: string[]) {
+    this.base_route = base_route;
     this.init()
   }
+  
   nested_files(dir: string, full?: boolean): string[] {
     let res: string[] = []
     glob(path.join(dir, '/**/*'), (err, matches) => {
@@ -63,7 +73,7 @@ export class PathTes implements IPathTes {
   }
   private init() {}
   full_path(...pathParams: string[]): string {
-    return path.resolve(this.base_route, ...pathParams).normalize()
+    return path.resolve(...this.base_route, ...pathParams).normalize()
   }
   to_full(...pathes: []): string[] {
     return pathes.map((p) => this.full_path(p))
@@ -90,8 +100,12 @@ export class PathTes implements IPathTes {
     const prev = full ? this.base + '/' : ''
     return path.normalize(`${prev}${_path.dir}/`)
   }
-  path_to_str(_path: IPath, full: boolean = false) {
+  path_str_not_ext(_path: IPath, full: boolean = false) {
     const pdir = this.path_to_dir(_path, full) + _path.file
-    return path.normalize(pdir)
+    return path.normalize(pdir) 
+  }
+  path_to_str(_path: IPath, full: boolean = false) {
+    const pdir = this.path_to_dir(_path, full) + _path.file + _path.suffix
+    return path.normalize(pdir) 
   }
 }

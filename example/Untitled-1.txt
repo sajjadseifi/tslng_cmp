@@ -1,0 +1,28 @@
+
+function mapToZero(Int n,Array A) returns Int:
+    val int a;
+    foreach(a of A):
+        if(A[a] != 0):
+            A[a] = 0;
+        end
+    end
+end
+
+name | type | reg
+n    | Int  | 0
+A    | Int  | 1
+a    | Int  | 2
+--
+    n -> r0 
+    A -> r1 
+    a -> r2 
+    begin0
+    end0
+--
+prorc mapToZero
+    
+
+proc main
+    
+
+

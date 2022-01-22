@@ -5,6 +5,9 @@
   "typings": "all.d.ts",
   "scripts": {
     "start": "ts-node -e 'import { main } from \"./src/index\"; main()'",
+    "cmp": "yarn start ./example",
+    "tsvm": "tsvm.exe a.out",
+    "cr": "yarn cmp && yarn tsvm",
     "build": "tsc src/index.ts",
     "lint": "eslint . --no-ignore",
     "lint:fix": "eslint . --no-ignore  --fix",

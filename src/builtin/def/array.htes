@@ -1,17 +1,16 @@
-
 -- creating array with size of 'n'
-
+-- length n+1, 0 position is length array 
 Array createArray(Int n):
-    mov r0,0
-    st  r0,8
-    add r0,r0,[n]
-    call mem, r0
+    mov r1,8
+    mul r2,r1,r0
+    add r2,r2,r1
+    call mem,r2
+    st r0,r2
+    mov r0,r2
     ret
 end
-
 -- get length of array with Array  
-
 Int arrayLength(Array a):
-    ld r0,[a]
+    ld r0,r0
     ret
 end

@@ -78,18 +78,25 @@ export class Parser implements IParserBase {
       // console.log('err catch parseer')
     }
   }
+  linking(symbol:ISymbol):string{
+    if(symbol.linker_code == -1)
+      return symbol.key as string
 
+    return `${symbol.key}${symbol.linker_code}`
+  }
   sym_declared(key: KeySymbol): ISymbol[] {
     const strk = key as string
     const syms: ISymbol[] = []
     let sym = this.crntstbl.find_globaly(strk)
     //exsit in scop
-    if (sym) return [sym]
-
-    for (const tbl of this.mod_tbls) {
-      sym = tbl.get(key as string)
-      //if exsit in module
-      if (sym && sym.is_pub) syms.push(sym)
+    if (sym) 
+      syms.push(sym)
+    else {
+      for (const tbl of this.mod_tbls) {
+        sym = tbl.get(key as string)
+        //if exsit in module
+        if (sym && sym.is_pub) syms.push(sym)
+      }
     }
     return syms
   }
@@ -158,8 +165,6 @@ export class Parser implements IParserBase {
       }
     return res as IToken[]
   }
-
-
   side_capsolate(
     exp: string,
     strict: boolean,

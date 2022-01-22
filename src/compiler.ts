@@ -26,6 +26,8 @@ import { ErrorCorrection } from './error-correction'
 import { IErrorCorrection } from './types/error-correction'
 import { IR } from './ir/IR'
 import { TSIR } from './ir/tes-IR'
+import { Linter } from 'eslint'
+import { ILinkerIR, LinkerIR } from './linker'
 export interface ICompiler {
   run(): void
 }
@@ -49,16 +51,18 @@ export class Compiler implements ICompiler, SharedCompier {
   private switcher: IParserGenerator
   showing_log=false
   ir!:IR
-  obj_list:{fd:FD,path:IPath}[];
-  constructor() {
+  out_fd:number
+  constructor(route:string) {
     this.completed_mods = 0
+    this.out_fd = -1
     // this.showing_log = true
+    if(route.length > 0)
+      _defalut.app.path.dir += `/${route}`
     this.tpath = new PathTes(_defalut.base_route)
     this.congigure = new ConfigurManagemnt(this.tpath)
     this.root = new SymbolTable()
     this.gm = new Graph(undefined, true)
     this.switcher = new ParserGenerator(this)
-    this.obj_list=[];
   }
   add_to_complet() {
     this.completed_mods++
@@ -75,12 +79,13 @@ export class Compiler implements ICompiler, SharedCompier {
     //[parse and then compilation]
     this.compile()
     //[do some thing after compilation]
-    // this.post_compile()
+    await this.post_compile()
   }
   async load_file_node(node: IGraphNode<IModule>): Promise<number> {
     let fd = -1
     try {
       const fpath = this.tpath.path_to_str(node.value.path)
+      // console.log(fpath);
       fd = await read_async(fpath)
       const mod = node.value as Module
       mod.set_complex(fd, -1)
@@ -106,14 +111,12 @@ export class Compiler implements ICompiler, SharedCompier {
     const { suggest: sg, root: r,ec } = this
     this.parser = new Parser(l, cnf, lg, sg,ec, r, this.showing_log)
   }
-  async create_object_file(path:IPath)
+  async create_object_file(node:IGraphNode<IModule>)
   {
-    const fd = await create_file_or_clear(this.tpath.path_to_str(path) + ".ts");
-    console.log(fd);
-    this.obj_list.push({fd,path});
-  }
-  find_obj_fd(path:IPath){
-    return this.obj_list.find(ob=>ob.path==path)?.fd || -1
+    const path:IPath = node.value.path
+    const faddr = this.tpath.path_str_not_ext(path) + FileExtention.TS
+    const fd = await create_file_or_clear(faddr);
+    node.value.set_tsfd(fd);
   }
   //DFS
   async load_mods_dfs(root: IGraphNode<IModule>): Promise<void> {
@@ -122,6 +125,7 @@ export class Compiler implements ICompiler, SharedCompier {
     root.visit()
     //load first module
     await this.async_module_handler(root)
+    // console.log(root.value.path);
 
     for (const node of root.children) {
       //Check the node if it was not visited
@@ -150,34 +154,33 @@ export class Compiler implements ICompiler, SharedCompier {
     //opeining a file to start
     if (node.value.is_start){  
       await this.load_file_node(node)
-      await this.create_object_file(node.value.path)
+      await this.create_object_file(node)
     } 
     //syncron oprations
     return this.module_handler(node)
+  }
+  starter(name:string):boolean{
+    return this.congigure.config.app.start == name
   }
   module_handler: TraversalExcutor<IModule> = (node) => {
     if (node.value.is_finished) return true
     //completing level in lexer
     this.cheack_and_complet(node)
     //seting node on parser layout for get symbols on childs import node
-    
     this.parser.set_module_node(node)
-    
     //run on mode seleted
     this.switcher.switching(node)
-    
-    console.log(colors.green(`:: ${strble_mode_parse[node.value.mode]} ::`))
-    node.log()
+    // console.log(colors.green(`:: ${strble_mode_parse[node.value.mode]} ::`))
+    // node.log()
     //ir switcher
-    const tsfd = this.find_obj_fd(node.value.path);
     if(this.ir)
-    this.ir.set_tsfd(tsfd);
+      this.ir.set_tsfd(node.value.tsfd);
     else 
-    this.ir = new TSIR(tsfd); 
-
+      this.ir = new TSIR(node.value.tsfd); 
+    //
     const SPT = this.switcher.parser
     const SP = SPT ? new SPT(this) : undefined
-    
+    //
     this.parser.execute(SP)
     //resposne after parser executatuon
     this.checking_after_mode_travel(node)
@@ -211,7 +214,8 @@ export class Compiler implements ICompiler, SharedCompier {
     const dir = parrent.value.path.dir
     const imps = this.parser.imports
     const pather = (file_name: string) => {
-      return path.normalize(path.join(dir, new Path(file_name).file))
+      // console.log(file_name);
+      return path.normalize(path.join(dir,file_name))
     }
     //change to full path
     this.parser.imports = imps.map((imp) => pather(imp))
@@ -254,7 +258,6 @@ export class Compiler implements ICompiler, SharedCompier {
     this.builtin_mod(root!)
     //[loading all tree file in to graph & then pruning]
     await this.load_mods_dfs(root!)
-    console.log(this.obj_list);
   }
   //
   compile() {
@@ -268,6 +271,10 @@ export class Compiler implements ICompiler, SharedCompier {
     }
   }
   //
-  post_compile() {}
-  private override_conf() {}
+  async post_compile() {
+    const pout = this.congigure.config.out
+    const lnkr :ILinkerIR = new LinkerIR(this.tpath,pout,this.gm);
+
+    await lnkr.build();
+  }
 }

@@ -52,12 +52,13 @@ export class HeadeParser extends SubParser implements IParser {
     this.prog()
   }
   func(): void {
+    this.ir.reset_reg();
     this.fdec()
     //body stmt for use assembely code
     if (is_begin(this.parser.first_follow)){
       const func = this.parser.crntstbl.last! 
 
-      this.ir.proc(func.key as string)
+      this.ir.proc(this.parser.linking(func))
       
       let code = this.body()
       //add arg description
@@ -109,6 +110,7 @@ export class HeadeParser extends SubParser implements IParser {
     this.parser.next();
     //
     symnode.set_type(type as SymbolType)
+    symnode.set_likner(this.parser.modules.plex.fd);
     this.parser.crntstbl.add_node(symnode)
 
     this.arg_passanger(symnode);
@@ -130,6 +132,7 @@ export class HeadeParser extends SubParser implements IParser {
       const end = this.parser.lexer.char_index + 1
       code = read_range(this.parser.modules.plex.fd,start,end);
     })
+    code = '\t' + code.trim();
     return code;
   }
 

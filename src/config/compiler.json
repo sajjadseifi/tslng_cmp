@@ -2,19 +2,26 @@
     "app":{
         "start":"main",
         "path":{
-            "dir":"./example",
-            "file":"main.tes",
+            "dir":".",
+            "file":"main",
             "suffix":".tes"
         }
     },
     "def":{
         "dir":"./src/builtin/def",
-        "file":"*.htes"
+        "file":"*",
+        "suffix":".htes"
+    },
+    "out":{
+        "dir":".",
+        "file":"a",
+        "suffix":".out"
     },
     "full_path":"",
     "base_route":".",
     "pck":{
-        "dir":"./src/builtin/def",
-        "file":"package.tson"
+        "dir" : "./src/builtin/def",
+        "file" : "package",
+        "suffix" : ".tson"
     }
 }

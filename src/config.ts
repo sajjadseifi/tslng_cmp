@@ -1,6 +1,4 @@
-import path from 'path'
-import fs from 'fs'
-import { FileExtention, IPath, IPathTes } from './lib/path'
+import {  IPath, IPathTes } from './lib/path'
 
 export interface IApp {
   start: string
@@ -10,6 +8,7 @@ export interface IConfig {
   app: IApp
   def: IPath
   pck: IPath
+  out: IPath
   conf_path: string
   default_path: string
   base_route: string

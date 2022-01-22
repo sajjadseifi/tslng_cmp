@@ -1,26 +1,25 @@
-function find(Array A,Int x) returns Int:
-    val Int i;
-    i = 0;
+imp "./2.tes"
 
-    foreach (a of 10):
-        if (x == a):
-            return i;
-        end
-            i = i + 1;
-    end
-    i = 1 ? i + 1 : i *5;
-    return -1;
+function setcb(Int b,Int c,Int d) returns Int:
+    b = 10;
+    c = 5;
 end
 
 function main() returns Int:
-    val Array A;
+    val Int c;
     val Int b;
+    val Array a;
     
-    A = createArray(5);
+    setcb(20,c,b);
+
+    a = createArray(a);
+
+    foreach(i of sumList(a)):
+        if(i == 2):
+            i = i + 1;
+        end
+        printInt(i);
+    end
     
-    b = find(A,5);
-    
-    printInt(b);
-    
-    return 0;
+	return 0;
 end

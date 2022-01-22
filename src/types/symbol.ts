@@ -15,7 +15,12 @@ export interface ISymbol {
   param_counts: number
   position: IPosition
   is_pub?: boolean
+  linker_code:number
+  is_load:boolean
+  loaded():void
+  unloaded():void
   used(): void
+  un_used(): void
   get is_used(): boolean
   get used_number(): number
   to_pub(): void
@@ -30,6 +35,7 @@ export interface ISymbol {
   same(key: string): boolean
   set_reg(reg:number):void
   get get_reg():number
+  set_likner(linker_code:number):void
 }
 export interface ISymbolTable {
   parrent?: ISymbolTable // if null this mean root
@@ -60,4 +66,6 @@ export interface ISymbolTable {
     args_type?: SymbolType[]
   ): void
   used_all(): void
+  get regs_all():number[]
+  get regs_used():number[]
 }

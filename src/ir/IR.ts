@@ -7,15 +7,26 @@ interface IIR{
     slabel(lab:number) :string;
     sreg(reg:number) : string;
     set_tsfd(tsfd:number):void;
+    reset_reg():void
 }
 export abstract class IR implements IIR{
     private lab_c:number
     private reg_c:number
+    private en:boolean
     constructor(public fd:FD){
-        this.reg_c = 1;
-        this.lab_c = 1;
+        this.reg_c = 0;
+        this.lab_c = 0;
+        this.en = true;
     }
-    
+    disabled():void{
+        this.en = false;
+    }
+    enabled():void{
+        this.en = true;
+    }
+    reset_reg(c:number=0):void{
+        this.reg_c = c;
+    }
     get label() : number{
         return this.lab_c++; 
     }
@@ -26,13 +37,15 @@ export abstract class IR implements IIR{
         this.fd = tsfd
     }
     slabel(lab:number) : string{
-        return "lab" + lab; 
+        return "L" + lab; 
     }
     sreg(reg:number) : string{
         return "r" + reg; 
     }
     write(code:string){
-        if(this.fd != -1) write(this.fd,code);
+        if(!this.en || this.fd == -1) return
+
+        write(this.fd,code);
     }
     nwrite(code:string){
         this.write(line(code));

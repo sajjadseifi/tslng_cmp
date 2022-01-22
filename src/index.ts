@@ -2,7 +2,8 @@ import { Compiler, ICompiler } from './compiler'
 // import fs from 'fs'
 // import { write } from './io'
 export const main = () => {
-  const compiler: ICompiler = new Compiler()
+  const route = process.argv.length > 1 ?  process.argv[1] : '';
+  const compiler: ICompiler = new Compiler(route)
   compiler.run()
 
   // fs.open("x.ts","w+",(err,fd)=>{

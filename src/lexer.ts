@@ -261,8 +261,9 @@ export class Lexer implements ILexer, ILexerAtomata {
       case keywords.FOREACH:
         return TokenType.TOKEN_KEYWORD_FOREACH
       case keywords.WHILE:
-        return TokenType.TOKEN_KEYWORD_WHILE
-
+        return TokenType.TOKEN_KEYWORD_WHILE    
+      case keywords.BREAK:
+        return TokenType.TOKEN_KEYWORD_BREAK
       default:
         return NULL
     }

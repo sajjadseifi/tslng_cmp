@@ -18,6 +18,8 @@ export class Sym implements ISymbol {
   is_pub?: boolean
   private _used_sym_number: number
   private reg;
+  linker_code: number
+  is_load: boolean
   constructor(
     public key?: string | Scop,
     public type?: SymbolType,
@@ -28,6 +30,18 @@ export class Sym implements ISymbol {
     this.set_prms_count(param_counts)
     this.position = new Position(-1, -1)
     this.reg = -1;
+    this.linker_code = -1;
+    this.is_load = false
+  }
+  loaded(): void {
+    this.is_load = true
+  }
+  unloaded(): void {
+    this.is_load = false
+  }
+
+  set_likner(linker_code: number): void {
+    this.linker_code = linker_code
   }
   set_reg(reg: number): void {
     this.reg= reg;
@@ -46,6 +60,9 @@ export class Sym implements ISymbol {
   }
   used(): void {
     this._used_sym_number++
+  }
+  un_used(): void {
+    this._used_sym_number--
   }
   set_index(index: number): void {
     this.index = index
@@ -209,5 +226,12 @@ export class SymbolTable implements ISymbolTable {
     if (this.parrent == null) return null
 
     return this.parrent.find_globaly(key)
+  }
+  get regs_all():number[]{
+    return this.symbols.map(s=>s.get_reg);
+  }
+  
+  get regs_used():number[]{
+    return this.symbols.filter(s=>s.is_used).map(s=>s.get_reg)
   }
 }
