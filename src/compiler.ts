@@ -85,7 +85,6 @@ export class Compiler implements ICompiler, SharedCompier {
     let fd = -1
     try {
       const fpath = this.tpath.path_to_str(node.value.path)
-      // console.log(fpath);
       fd = await read_async(fpath)
       const mod = node.value as Module
       mod.set_complex(fd, -1)
@@ -125,7 +124,6 @@ export class Compiler implements ICompiler, SharedCompier {
     root.visit()
     //load first module
     await this.async_module_handler(root)
-    // console.log(root.value.path);
 
     for (const node of root.children) {
       //Check the node if it was not visited
@@ -170,8 +168,8 @@ export class Compiler implements ICompiler, SharedCompier {
     this.parser.set_module_node(node)
     //run on mode seleted
     this.switcher.switching(node)
-    // console.log(colors.green(`:: ${strble_mode_parse[node.value.mode]} ::`))
-    // node.log()
+    console.log(colors.green(`:: ${strble_mode_parse[node.value.mode]} ::`))
+    node.log()
     //ir switcher
     if(this.ir)
       this.ir.set_tsfd(node.value.tsfd);
@@ -214,7 +212,6 @@ export class Compiler implements ICompiler, SharedCompier {
     const dir = parrent.value.path.dir
     const imps = this.parser.imports
     const pather = (file_name: string) => {
-      // console.log(file_name);
       return path.normalize(path.join(dir,file_name))
     }
     //change to full path

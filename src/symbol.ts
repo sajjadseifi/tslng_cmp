@@ -67,8 +67,8 @@ export class Sym implements ISymbol {
   set_index(index: number): void {
     this.index = index
   }
-  init_subtable(parrent: ISymbolTable): void {
-    this.subTables = new SymbolTable()
+  init_subtable(parrent: ISymbolTable,pindex:number=-1): void {
+    this.subTables = new SymbolTable(pindex)
     this.subTables.parrent = parrent
   }
   same(key: string): boolean {
@@ -103,7 +103,7 @@ export class SymbolTable implements ISymbolTable {
   symbols: ISymbol[]
   parrent?: ISymbolTable
 
-  constructor() {
+  constructor(public pindex = -1) {
     this.symbols = []
   }
   builtin(
@@ -116,7 +116,7 @@ export class SymbolTable implements ISymbolTable {
     const func = this.put(name, ret_type, true, prmc)
     if (func === null) return
 
-    func.init_subtable(this)
+    func.init_subtable(this,-1)
 
     for (let i = 0; i < prmc; i++) {
       func.subTables!.put(args[i], args_type[i])
@@ -166,13 +166,14 @@ export class SymbolTable implements ISymbolTable {
     key: KeySymbol,
     type: SymbolType,
     is_func: boolean = false,
-    param_counts?: number
+    param_counts: number=-1,
+    pindex: number=-1,
   ): ISymbol | null {
     if (typeof key === 'string' && this.exist(key)) return null
 
     const new_sym = new Sym(key, type, param_counts) as ISymbol
 
-    if (is_func) new_sym.init_subtable(this)
+    if (is_func) new_sym.init_subtable(this,pindex)
 
     this.add_node(new_sym)
 
@@ -233,5 +234,8 @@ export class SymbolTable implements ISymbolTable {
   
   get regs_used():number[]{
     return this.symbols.filter(s=>s.is_used).map(s=>s.get_reg)
+  }
+  index_by_name(name:string):number{
+    return this.symbols.findIndex((s)=>s.key === name)
   }
 }

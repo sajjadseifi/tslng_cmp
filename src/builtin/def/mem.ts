@@ -1,27 +1,24 @@
 
-proc rcblk
-    mov r1,8
+proc gbblk9
+	mov r1,8
     sub r0,r0,r1
     ret
-
-proc rcget
-    call rcblk,r0
+proc gbget9
+	call rcblk,r0
     ld r0,r0
     ret
-
-proc rcset
-    mov r2,1
+proc gbset9
+	mov r2,1
     mov r3,r0
     call rcget,r3
     call rcblk,r0
     st r3,r1
     mov r0,r3
     ret
-
-proc rcinc
-    mov r2,1
+proc gbinc9
+	mov r2,1
     mov r3,r0
-    call rcget,r3
+    call gbget,r3
     jz r1,rcinc_add
     sub r3,r3,r1
     jmp rcinc_end
@@ -32,9 +29,8 @@ proc rcinc
     st r3,r0
     mov r0,r3
     ret
-
-proc malloc
-    mov r1,0
+proc malloc9
+	mov r1,0
     mov r2,8
     mov r3,r2
     call mem,r3
@@ -45,12 +41,11 @@ proc malloc
     st r0,r3
     mov r0,r3       
     ret
-
-proc dealloc
-    mov r1,0
+proc dealloc9
+	mov r1,0
     ld r3,r0
     mov r5,r3
-    call rcget,r3
+    call gbget,r3
     call rel,r0
     cmp= r6,r4,r1
     jz r6,dealloc_out 
@@ -58,4 +53,3 @@ proc dealloc
     dealloc_out:
     mov r0,r5
     ret
-

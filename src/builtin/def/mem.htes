@@ -1,15 +1,19 @@
-
-proc rcblk
+--get pointer of garbage collector block
+--P pointer of memory
+Int gbblk(Int p):
     mov r1,8
     sub r0,r0,r1
     ret
-
-proc rcget
+end
+--get value
+Int gbget(Int p):
     call rcblk,r0
     ld r0,r0
     ret
-
-proc rcset
+end
+--arg is pointer memory
+--set value of gb counter
+Int gbset(int p):
     mov r2,1
     mov r3,r0
     call rcget,r3
@@ -17,11 +21,12 @@ proc rcset
     st r3,r1
     mov r0,r3
     ret
-
-proc rcinc
+end
+--change gb count if (is_inc == 0) increamet else decrease
+Int gbinc(Int p,Int is_inc):
     mov r2,1
     mov r3,r0
-    call rcget,r3
+    call gbget,r3
     jz r1,rcinc_add
     sub r3,r3,r1
     jmp rcinc_end
@@ -32,8 +37,9 @@ proc rcinc
     st r3,r0
     mov r0,r3
     ret
-
-proc malloc
+end
+--(n byte) size of data for allocating 
+Int malloc(Int n):
     mov r1,0
     mov r2,8
     mov r3,r2
@@ -45,12 +51,14 @@ proc malloc
     st r0,r3
     mov r0,r3       
     ret
-
-proc dealloc
+end
+--addr of allocted  
+--return number of 
+Int dealloc(Int addr):
     mov r1,0
     ld r3,r0
     mov r5,r3
-    call rcget,r3
+    call gbget,r3
     call rel,r0
     cmp= r6,r4,r1
     jz r6,dealloc_out 
@@ -58,4 +66,4 @@ proc dealloc
     dealloc_out:
     mov r0,r5
     ret
-
+end

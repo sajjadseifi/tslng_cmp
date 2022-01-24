@@ -1,5 +1,6 @@
 prog ::= func |
 func prog
+
 func ::= function iden ( flist ) returns type : body end |
 
 body ::= stmt |

@@ -1,6 +1,6 @@
 import { keywords, sym, typedef } from '../constants'
 import { Sym } from '../symbol'
-import { ISymbol, IToken, KeySymbol, Nullable, SymbolType } from '../types'
+import { ISymbol, ISymbolTable, IToken, KeySymbol, Nullable, SymbolType } from '../types'
 import { EpxrType } from '../types/parser'
 import { tokChecker, typeCheking, zero } from '../utils'
 import {
@@ -26,7 +26,9 @@ export interface ConceptualValues<T,A>
 }
 export interface ExprCV{
   val:any
-  mem?:boolean
+  pt?:boolean//pointer
+  adr?:boolean//address
+  mem?:boolean//memory store or laod
 }
 export const cv=<T,A>(type:T,things:A):ConceptualValues<T,A>=>({type,things})
 
@@ -50,10 +52,6 @@ export class TesParser extends SubParser implements IParser, IParserRD {
   }
   parse(): void {
     this.prog()
-    if(this.is_prs) {
-      this.ir.wlbl(-1);
-      this.ir.ret()
-    }
   }
   prog(): void {
     //
@@ -63,7 +61,6 @@ export class TesParser extends SubParser implements IParser, IParserRD {
     //re call prog
     this.prog()
   }
-  
   func(): void {
     let fcname
     let prmc = -1
@@ -87,13 +84,12 @@ export class TesParser extends SubParser implements IParser, IParserRD {
     this.parser.ec.function_start()
     //get name of function
     fcname = this.parser.ec.function_in_iden()!
-    console.log({fcname});
     //create function symbol node
     let symnode: Nullable<ISymbol> = null
-
+    //
     if (this.module.is_pre) {
       symnode = new Sym(fcname)
-      symnode.init_subtable(this.parser.crntstbl)
+      symnode.init_subtable(this.parser.crntstbl,-1)
     }
     //if position can set pos
     if (tok) symnode?.set_pos(tok.pos!)
@@ -123,8 +119,13 @@ export class TesParser extends SubParser implements IParser, IParserRD {
     
     if(!symnode) 
       symnode = this.parser.crntstbl.get(fcname);
+
+    symnode = symnode!
+    if(symnode.subTables)
+      symnode.subTables.pindex = 
+      this.parser.crntstbl.index_by_name(symnode.key as string)
     //public function
-    if (pub) symnode!.to_pub()
+    if (pub) symnode.to_pub()
     //run able code
     if(this.is_prs)
     {
@@ -151,7 +152,6 @@ export class TesParser extends SubParser implements IParser, IParserRD {
     if(this.is_prs) {
       this.ir.wlbl(out_fc)
       this.ir.ret()
-
     }
     this.ir.enabled()
   }
@@ -170,15 +170,16 @@ export class TesParser extends SubParser implements IParser, IParserRD {
       //get scop node
       let  symscop: ISymbol = new Sym(scop_key, sym.NIL);
       const fcs = this.parser.focuses.focus;
-
       if(fcs?.is_defined && scop_key === keywords.FUNCTION)
         symscop = fcs?.sym!; 
-      
-        //if scop not a function must init subtable to use new scop
-      if (!symscop.is_func) symscop.init_subtable(this.parser.crntstbl)
+      //if scop not a function must init subtable to use new scop
+      if (!symscop.is_func)
+      {
+        const index = this.parser.crntstbl.index_by_name(symscop.key as string);
+        symscop.init_subtable(this.parser.crntstbl,index);
+      }
       //
       this.parser.crntstbl = symscop.subTables!
-
       //function in pre parsing
       if(this.module.is_pre && scop_key !== keywords.FUNCTION)
         return
@@ -193,11 +194,9 @@ export class TesParser extends SubParser implements IParser, IParserRD {
   body(scop: number = 0, skop_key?: string): boolean {
     //goto sub scop
     this.goto_scop(skop_key || scop)
-
     while(this.stmt(scop, skop_key)) {
       //empty
     }
-
     this.out_scop()
     return false
   }
@@ -250,6 +249,7 @@ export class TesParser extends SubParser implements IParser, IParserRD {
         let r = t.things.val
         this.ir.movr(0,r);
       }
+      this.free_reg_ret(this.parser.crntstbl);
       this.ir.jmp(this.ir.slabel(out_fc))
     }
   }
@@ -317,10 +317,9 @@ export class TesParser extends SubParser implements IParser, IParserRD {
 
     if (this.parser.in_follow(keywords.DO)) this.parser.next()
     
-    //if r == 0 goto out
-
     if(this.is_prs){
       const rexp = exp.things?.val 
+      //if r == 0 goto out
       this.ir.jz(rexp,this.ir.slabel(end));
     }
     nested_labs.push(end);
@@ -513,9 +512,6 @@ export class TesParser extends SubParser implements IParser, IParserRD {
       if (!sym) {
         this.parser.logger.is_decleared(name!)
       }
-      else if(sym.is_used){
-        sym.set_reg(this.ir.reg)
-      }
     }
     else if (this.module.is_pre){
       this.parser.crntstbl.put(name!, type, false)
@@ -565,7 +561,22 @@ export class TesParser extends SubParser implements IParser, IParserRD {
 
     return { val : newReg }
   }
-  
+  //free reg in scop
+  free_reg_table(tbl:ISymbolTable):void{
+    if(!tbl) return
+    const pind = tbl.pindex
+    const p = tbl.parrent!.symbols[pind]
+    const size = tbl.symbols.length
+    for(let i = p.param_counts; i < size ;i++){
+      const r = tbl.symbols[i].get_reg;
+      if(r == -1) continue;
+      this.ir.dealloc(r)
+    }
+  }
+  free_reg_ret(tbl:ISymbolTable):void{
+    this.free_reg_table(tbl); 
+    this.free_reg_ret(tbl.parrent!);    
+  }
   //return loaded register in memory
   load_mem_or_reg(...rs:(ExprCV|null)[]):number[]{
     let r;
@@ -912,6 +923,10 @@ export class TesParser extends SubParser implements IParser, IParserRD {
       //if use the identifier symbol checked th is_used propery
       if (iden){
         if(this.module.is_pre) iden.used()
+        if(this.is_prs && iden.get_reg == -1){
+          iden.set_reg(this.ir.reg)
+          iden.un_used();
+        }
       }
       //error not defind variable and suggest word this place
       else if (this.is_prs) {

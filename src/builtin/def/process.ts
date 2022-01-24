@@ -1,4 +1,4 @@
 
-proc exit11
+proc exit13
 	jmp _exit:
     ret

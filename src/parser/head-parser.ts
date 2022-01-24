@@ -62,7 +62,7 @@ export class HeadeParser extends SubParser implements IParser {
       
       let code = this.body()
       //add arg description
-      code = this.arg_to_reg(func,code)
+      // code = this.arg_to_reg(func,code)
       //write builtin code
       this.ir.nwrite(code);
     }
@@ -151,13 +151,15 @@ export class HeadeParser extends SubParser implements IParser {
     return false
   }
   arg_passanger(symnode:ISymbol):void{
-    symnode.init_subtable(this.parser.crntstbl)
+    const sindex = this.parser.crntstbl.index_by_name(symnode.key as string);
+    symnode.init_subtable(this.parser.crntstbl,sindex)
     symnode.subTables!.join(this.tesprs.parser.func_arg)
     this.parser.func_arg.clear()
   }
   arg_to_reg(func:ISymbol,code?:string):string{
     const syms = func.subTables!.symbols
     for (let c = 0; c < func.param_counts; c++) {
+      if(syms[c] === null || syms[c] === undefined) continue;
       const name = `[${syms[c].key! as string}]`;
       const reg = syms[c].get_reg;
       if(code)

@@ -31,7 +31,7 @@ export interface ISymbol {
   set_pos(pos: IPosition): void
   set_prms_count(size: number): void
   add_symbol(sym: ISymbol): void
-  init_subtable(parrent: ISymbolTable): void
+  init_subtable(parrent: ISymbolTable,pindex:number): void
   same(key: string): boolean
   set_reg(reg:number):void
   get get_reg():number
@@ -40,6 +40,7 @@ export interface ISymbol {
 export interface ISymbolTable {
   parrent?: ISymbolTable // if null this mean root
   symbols: ISymbol[]
+  pindex:number
   get len(): number
   put(
     key: KeySymbol | undefined,
@@ -68,4 +69,5 @@ export interface ISymbolTable {
   used_all(): void
   get regs_all():number[]
   get regs_used():number[]
+  index_by_name(name:string):number
 }

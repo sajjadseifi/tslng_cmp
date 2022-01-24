@@ -1,4 +1,4 @@
 
-proc printInt9
-	call iput,r0
+proc printInt11
+	call iput,[n]
     ret

@@ -9,6 +9,7 @@ Array createArray(Int n):
     mov r0,r2
     ret
 end
+
 -- get length of array with Array  
 Int arrayLength(Array a):
     ld r0,r0

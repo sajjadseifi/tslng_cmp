@@ -1,4 +1,3 @@
-import { FD } from "../io";
 import { line, tabline } from "../utils/stringfy";
 import { IR } from "./IR";
 
@@ -21,13 +20,11 @@ export interface TSCaclcmpplcate {
     and(r1:number,r2:number,r3:number):any 
     or(r1:number,r2:number,r3:number):any 
 }
-
 export interface TSJump{
     jmp(dst:string):any 
     jz(r1:number,dst:string):any
     jnz(r1:number,dst:string):any
 }
-
 export interface TSFunc{
     proc(name:string):any
     call(name:string,...regs:number[]):any
@@ -50,12 +47,16 @@ export interface TSOthrs{
     get byte_reg():number
     free_all(...regs:number[]):any
 }
-
+export interface TSAlloc{
+    malloc(r0:number):any
+    dealloc(r0:number):any
+}
 export class TSIR 
     extends IR 
-    implements TSCacl,TSJump,TSBuiltin,TSFunc,TSOthrs,TSCaclcmpplcate
+    implements TSCacl,TSJump,TSBuiltin,TSFunc,
+               TSOthrs,TSCaclcmpplcate,TSAlloc
 {
-
+    
     reg_num(num:number):number{
         const reg = this.reg;
         this.mov(reg,num);
@@ -159,4 +160,10 @@ export class TSIR
     free_all(...regs: number[]) {
         regs.map(r=>this.rel(r))
     }
+    /* Allocating */
+    //r0 -> byte size
+    malloc  = (r0: number) => this.wisa("malloc",r0);
+    //r0 -> refrence of data
+    dealloc = (r0: number) => this.wisa("dealloc",r0);
+ 
 }

@@ -266,7 +266,7 @@ export class Logger implements ILogger {
   private title_log(h: number = 10, str: string = '', color?: any) {
     //create h tag
     while (h-- > 0) str = colors.bold(str)
-    //
+
     console.log(color ? color(str) : str)
   }
   warn_with_pos(pos: IPosition, message: string) {
