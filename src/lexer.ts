@@ -156,7 +156,8 @@ export class Lexer implements ILexer, ILexerAtomata {
 
     this.lex.un_get_char()
     //if token is comment recursive initing token
-    if (this.lex.tmp == '--' || this.lex.tmp == '/*') {
+    const c = this.lex.tmp 
+    if (c == '--' || c == '/*' || c == '#') {
       return this.init()
     }
     //Itoken
@@ -276,6 +277,11 @@ export class Lexer implements ILexer, ILexerAtomata {
     if ((str_tok = this.str())) {
       return str_tok
     }
+
+    if(c=='#'){
+      this.comment_line()
+      return TokenType.TOKEN_SPEC2
+    }
     //cant 2 cahrs token
     if (
       c == '?' ||
@@ -312,7 +318,7 @@ export class Lexer implements ILexer, ILexerAtomata {
       c == '*'
     )
       return this.spec2()
-
+    
     // //get real number
     // else if (patterns.POINT.test(this.lex.tmp)) tok_type = this.error5()
 

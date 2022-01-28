@@ -7,10 +7,20 @@
             "suffix":".tes"
         }
     },
-    "def":{
+    "builtin":{
         "dir":"./src/builtin/def",
-        "file":"*",
-        "suffix":".htes"
+        "proc":{
+            "file":"*",
+            "suffix":".ts"
+        },
+        "def":{
+            "file":"*",
+            "suffix":".htes"
+        },
+        "glob":{
+            "file":"*",
+            "suffix":".glob"
+        }
     },
     "out":{
         "dir":".",

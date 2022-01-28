@@ -5,7 +5,7 @@ export const IDENTIFIER = /^[a-zA-z_][a-zA-z_0-9]*$/
 
 export const APHA_NUMERIC_UNDE = /^[_a-zA-Z0-9]$/
 
-export const NUMERIC = /^[0-9][0-9]*$/
+export const NUMERIC = /^[0-9]+$/
 
 export const NON_ZERO = /^[1-9][0-9]*$/
 

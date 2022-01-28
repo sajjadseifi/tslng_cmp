@@ -1,0 +1,35 @@
+prog -> | 
+        proc prog
+
+proc ->  'proc' iden body
+body -> |
+        stmt body 
+stmt ->
+        mov isa2  |
+        mov reg,num  |
+        call iden,carg |
+        ret_stmt  |
+        add isa3 |
+        sub isa3 |
+        mul isa3 |
+        div isa3 |
+        mod isa3 |
+        ld isa2  |
+        st isa2  |
+        ret
+
+carg -> |
+            reg |
+            reg,carg
+
+#isa : instruction set architecture
+
+isa2 -> reg,reg
+
+isa3 -> isa2,reg
+
+iden -> [a-zA-Z_][a-zA-Z_0-9]+
+
+reg -> r$num$
+
+num -> [0-9]+

@@ -30,6 +30,7 @@ export interface ExprCV{
   adr?:boolean//address
   mem?:boolean//memory store or laod
 }
+
 export const cv=<T,A>(type:T,things:A):ConceptualValues<T,A>=>({type,things})
 
 let  out_fc  : number = -1
@@ -44,6 +45,10 @@ export class TesParser extends SubParser implements IParser, IParserRD {
     this.module = this.parser.module_node!.value!
     this.ir = this.cmp.ir as TSIR
   }
+  get begin_end_lab():[number,number]{
+    const last = nested_labs.length-1 
+    return [nested_labs[last-1],nested_labs[last]]
+  }
   get last_nested_labs():number{
     return nested_labs[nested_labs.length-1]
   }
@@ -56,12 +61,12 @@ export class TesParser extends SubParser implements IParser, IParserRD {
   prog(): void {
     //
     if (this.parser.lexer.finished) return
-    //init function
+    // //init function
     this.func()
     //re call prog
     this.prog()
   }
-  func(): void {
+  func(scop:number=-1): boolean {
     let fcname
     let prmc = -1
     let type = sym.EMPTY
@@ -74,7 +79,7 @@ export class TesParser extends SubParser implements IParser, IParserRD {
       out_fc = this.ir.label 
     
 
-    if (!tok || is_eof(tok)) return
+    if (!tok || is_eof(tok)) return false
 
     if (is_pub(tok)) {
       pub = true
@@ -145,7 +150,7 @@ export class TesParser extends SubParser implements IParser, IParserRD {
       this.ir.proc(this.parser.linking(symnode!))
     
     this.parser.focuses.defind(symnode)
-    this.parser.ec.body_begin(0, keywords.FUNCTION)
+    this.parser.ec.body_begin(scop++, keywords.FUNCTION)
     this.parser.focuses.pop()
 
     //out
@@ -154,6 +159,8 @@ export class TesParser extends SubParser implements IParser, IParserRD {
       this.ir.ret()
     }
     this.ir.enabled()
+
+    return true;
   }
   func_scop = (scop_key: any) => {
     return scop_key === keywords.FUNCTION && this.parser.crntstbl.last!
@@ -205,8 +212,15 @@ export class TesParser extends SubParser implements IParser, IParserRD {
     //if
     if (tokChecker.is_if(tok)) this.if_stmt(scop)
     else if (tokChecker.is_break(tok)) {
+      this.parser.next()
+      const [_,end] = this.begin_end_lab
+      this.ir.jmp(this.ir.slabel(end))
+      this.parser.ec.forget_sem();
+    }
+    else if (tokChecker.is_continue(tok)) {
       this.parser.next();
-      this.ir.jmp(this.last_nested_labs_str);
+      const [begin] = this.begin_end_lab
+      this.ir.jmp(this.ir.slabel(begin));
       this.parser.ec.forget_sem();
     }
     //while
@@ -218,14 +232,9 @@ export class TesParser extends SubParser implements IParser, IParserRD {
     //new scop block
     else if (tokChecker.is_begin(tok)) this.new_scop_stmt(scop, scop_key)
     //defenition var
-    else if (tokChecker.is_val(tok)) {
-      this.defvar()
-      this.parser.ec.forget_sem();
-    }
+    else if (this.defvar()) this.parser.ec.forget_sem();
     //expr
-    else if (!typeCheking.is_empty(this.expr().type)) {
-      this.parser.ec.forget_sem();
-    }
+    else if (!typeCheking.is_empty(this.expr().type)) this.parser.ec.forget_sem();
     //statment not definded
     else return false
     //statment defined
@@ -245,11 +254,12 @@ export class TesParser extends SubParser implements IParser, IParserRD {
     //if next token is not semicolon solved error during
     if(this.is_prs) {
       //move to r0 for return value
+
       if(t.things){
         let r = t.things.val
         this.ir.movr(0,r);
       }
-      this.free_reg_ret(this.parser.crntstbl);
+      // this.free_reg_ret(this.parser.crntstbl);
       this.ir.jmp(this.ir.slabel(out_fc))
     }
   }
@@ -322,8 +332,10 @@ export class TesParser extends SubParser implements IParser, IParserRD {
       //if r == 0 goto out
       this.ir.jz(rexp,this.ir.slabel(end));
     }
+    nested_labs.push(begin);
     nested_labs.push(end);
     this.parser.ec.body_begin(scop, keywords.WHILE)
+    nested_labs.pop();
     nested_labs.pop();
     
     if(this.is_prs) {
@@ -353,7 +365,6 @@ export class TesParser extends SubParser implements IParser, IParserRD {
       const rexp  = exp.things?.val
       const rcmp  = this.ir.reg
       const ro    = this.ir.bit_reg
-      //checking arr loop if expr is arr
       if(typeCheking.is_array(exp.type)){
         //get sizeof array load size in memeory
         const rsize = this.ir.reg
@@ -675,10 +686,10 @@ export class TesParser extends SubParser implements IParser, IParserRD {
   
         const rr = exp.things!
         //meme == false mean calculate r2,r3  set to r1 
-        if(rr.mem)
-          this.ir.st(rr?.val,rl?.val) 
-        else 
-          this.ir.movr(rr?.val,rl?.val)
+        // if(rr.mem)
+        //   this.ir.st(rl?.val,rr?.val) 
+        //   else 
+          this.ir.movr(rl?.val,rr?.val) 
         rl = rr
       }
     }

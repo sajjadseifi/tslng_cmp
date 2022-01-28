@@ -1,5 +1,5 @@
 
-proc sumList15
+proc sumList19
 	mov r2,12
 	mov r2,r1
 	mov r3,10
@@ -28,3 +28,6 @@ L3:
 	mul r14,r14,r12
 	add r14,r14,r0
 	mov r0,r1
+	jmp L0
+L0:
+	ret

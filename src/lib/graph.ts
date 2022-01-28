@@ -4,7 +4,7 @@ import { strble_mode_parse } from '../parser/types'
 import { Nullable } from '../types'
 import { is_null } from '../utils'
 
-export type Key = number | string
+export type Key = number | string | any
 export type Value<T> = T
 
 export enum SearchMode {

@@ -240,7 +240,7 @@ export class Compiler implements ICompiler, SharedCompier {
   builtin_mod(root: IGraphNode<IModule>) {
     //builtin modules
     const htess = this.tpath.files_in_dir(
-      this.congigure.config.def.dir,
+      this.congigure.config.builtin.def.dir,
       FileExtention.HTES
     )
     //adding define module

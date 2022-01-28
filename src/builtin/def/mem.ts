@@ -1,13 +1,13 @@
 
-proc gbblk9
+proc gbblk11
 	mov r1,8
     sub r0,r0,r1
     ret
-proc gbget9
+proc gbget11
 	call rcblk,r0
     ld r0,r0
     ret
-proc gbset9
+proc gbset11
 	mov r2,1
     mov r3,r0
     call rcget,r3
@@ -15,7 +15,7 @@ proc gbset9
     st r3,r1
     mov r0,r3
     ret
-proc gbinc9
+proc gbinc11
 	mov r2,1
     mov r3,r0
     call gbget,r3
@@ -29,7 +29,7 @@ proc gbinc9
     st r3,r0
     mov r0,r3
     ret
-proc malloc9
+proc malloc11
 	mov r1,0
     mov r2,8
     mov r3,r2
@@ -41,7 +41,7 @@ proc malloc9
     st r0,r3
     mov r0,r3       
     ret
-proc dealloc9
+proc dealloc11
 	mov r1,0
     ld r3,r0
     mov r5,r3

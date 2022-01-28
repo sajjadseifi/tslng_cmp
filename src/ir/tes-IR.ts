@@ -1,4 +1,5 @@
 import { line, tabline } from "../utils/stringfy";
+import { BIT, BYTE, FO_BLOCK_MEM, MAX_FILE_OPEN, MAX_MEM_CALL_STK, ZERO } from "./alloc";
 import { IR } from "./IR";
 
 export interface TSCacl {
@@ -50,13 +51,17 @@ export interface TSOthrs{
 export interface TSAlloc{
     malloc(r0:number):any
     dealloc(r0:number):any
+    main(runer:string):any
+    get_cell(raddr:number,roffset:number):any
+    set_cell(raddr:number,roffset:number,rdata:number):any
+    addr_cell(raddr:number,roffset:number):any
 }
 export class TSIR 
     extends IR 
     implements TSCacl,TSJump,TSBuiltin,TSFunc,
                TSOthrs,TSCaclcmpplcate,TSAlloc
 {
-    
+
     reg_num(num:number):number{
         const reg = this.reg;
         this.mov(reg,num);
@@ -165,5 +170,96 @@ export class TSIR
     malloc  = (r0: number) => this.wisa("malloc",r0);
     //r0 -> refrence of data
     dealloc = (r0: number) => this.wisa("dealloc",r0);
- 
+    main(runer:string) {
+        let stksize = 8; //stk[0] = end stack
+        //frame pointers,stack pointer
+        const FOP = BYTE /* FileOpenP 8 */
+        const FP  = FOP + BYTE /* FrameP 16 */ 
+        const SP  = FP + BYTE /* StackP  24 */
+        const FLP = SP + BYTE /* FlushP  32 */
+        stksize  += FLP;
+        const endP = stksize; /* endP  32 */
+        //file open section
+        const FOMS = MAX_FILE_OPEN * FO_BLOCK_MEM
+        stksize += BYTE /* End Block */
+        stksize += FOMS
+        //function call
+        stksize += BYTE /* EndBlock */
+        stksize += MAX_MEM_CALL_STK;
+
+        this.reset_reg()
+        const rstk  = this.reg
+        const raddr  = this.reg
+        const roff  = this.reg
+        const rdta  = this.reg
+        const rz = this.reg
+        const rbit = this.reg
+        const rbyte = this.reg
+        const rfree = this.reg
+        const scal =(addr_reg:number,offset_reg:number,data_reg:number)=> {
+            this.movr(roff,offset_reg) 
+            this.movr(raddr,addr_reg)
+            this.movr(rdta,data_reg)
+            this.set_cell(raddr,roff,rdta)   
+        }
+        
+        this.mov(rz,ZERO)
+        this.mov(rbit,BIT)
+        this.mov(rbyte,BYTE)
+    
+        //my main
+        this.proc("main")
+        this.mov(rstk,stksize)
+        this.mov(rfree,stksize)
+        this.call("memstk",rstk)
+        this.add(rfree,rfree,rstk)
+        // stk[0] = end block address
+        scal(rstk,rz,rfree)
+        // stk[index(endP)] = end of FOP block -> ret stored address data
+        this.mov(roff,endP/BYTE)
+        this.mov(rdta,endP + FOMS)
+        scal(rstk,roff,rdta)
+        // rfree = raddr =  addr of cell #FOP
+        this.movr(rfree,raddr)
+        /* start block of Call Stack Function */
+        //stk[index(FP)] = start addr
+        this.mov(roff,FP/BYTE)
+        scal(rstk,roff,raddr)
+        //stk[index(SP)] = start addr
+        this.mov(roff,SP/BYTE)
+        scal(rstk,roff,raddr)
+        //stk[index(SP)] = start addr
+        this.mov(roff,FLP/BYTE)
+        scal(rstk,roff,raddr)
+        // stk[1] = pointer of cell #FOP
+        this.mov(roff,FOP/BYTE)
+        scal(rstk,roff,rfree)
+        //app main
+        this.call(runer)
+        this.ret()
+    }
+    get_cell=(raddr:number,roffset:number) =>this.call("get_cell",raddr,roffset)
+
+    set_cell=(raddr:number,roffset:number,rdata:number)=>this.call("set_cell",raddr,roffset,rdata)
+    
+    addr_cell=(raddr:number,roffset:number)=>this.call("addr_cell",raddr,roffset)
+    /*
+        proc addr_cel #r0->addr,r1->offset(block/8)
+            mov r3,8
+            add r1,r1,r3  # index * 8
+            add r0,r0,r1  # cell address
+            ret
+
+        proc set_cell #r0->addr,r1->offset(block/8),r2->data 
+            call addr_cel,r0,r1
+            st r2,r0      # store data
+            mov r0,r1     # stored address data
+            ret
+
+        proc get_cell #r0->addr,r1->offset(block/8) 
+            call addr_cel,r0,r1
+            ld r0,r0      # load data
+            ret
+    */
+
 }

@@ -26,3 +26,9 @@ export type Partial<T> = {
 export type DeepPartial<T> = {
   [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P]
 }
+
+
+export type Abstract<T> = Function & {prototype: T};
+export type Constructor<T> = new (...ast:any[]) => T;
+export type Class<T> = Abstract<T> | Constructor<T>;
+

@@ -75,7 +75,8 @@ export class HeadeParser extends SubParser implements IParser {
     if(this.parser.lexer.finished) return;
 
     if(!is_type(this.parser.first_follow)){
-      console.log("expected type");
+      console.log(this.parser.first_follow);
+      console.log("expected type header parser");
       process.exit(1);
     }
     let type = this.tesprs.type() as SymbolType;

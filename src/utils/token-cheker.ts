@@ -42,6 +42,7 @@ export const is_foreach = (token: IToken) =>
 export const is_if = (token: IToken) => token && token.val === keywords.IF
 
 export const is_break = (token: IToken) => token && token.val === keywords.BREAK
+export const is_continue = (token: IToken) => token && token.val === keywords.BREAK
 
 export const is_of = (token: IToken) => token && token.val === keywords.OF
 

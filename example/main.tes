@@ -1,15 +1,14 @@
-imp "./2.tes"
-
 function main() returns Int:
-    val Array a;
-    a = createArray(a);
-
-    foreach(i of sumList(a)):
-        if(i == 2):
-            i = i + 1;
-        end
-        printInt(i);
-    end
+    val Array A;
+    A = createArray(5);
     
+    foreach(i of arrayLength(A)):
+        A[i] = getInt();
+    end
+
+    foreach(a of A):
+        printInt(a);
+    end
+
 	return 0;
 end

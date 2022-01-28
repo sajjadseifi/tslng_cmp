@@ -1,0 +1,9 @@
+export const ZERO  = 0
+export const BIT  = 1
+export const BYTE  = 8
+export const K = (10 ** 3)
+export const MEG = (10 ** 6)
+export const GIG = (10 ** 9)
+export const MAX_FILE_OPEN = 500
+export const FO_BLOCK_MEM = 5 * BYTE /* [fp + mod + start point + current point + end point ] */ 
+export const MAX_MEM_CALL_STK = 2 * MEG /* 2MG Byte */

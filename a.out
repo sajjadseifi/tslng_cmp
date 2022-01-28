@@ -13,116 +13,66 @@ proc arrayLength5
 proc getInt7
 	call iget,r0
     ret
-proc gbblk9
-	mov r1,8
-    sub r0,r0,r1
+proc printInt9
+	call iput,r0
     ret
-proc gbget9
-	call rcblk,r0
-    ld r0,r0
+proc printChar9
+	mov r1,r0
+    ld r1,r1
+    call iputch,r1
     ret
-proc gbset9
+proc printString9
 	mov r2,1
-    mov r3,r0
-    call rcget,r3
-    call rcblk,r0
-    st r3,r1
-    mov r0,r3
+    mov r3,8
+    ld r1,r0           # size of str
+nexch:
+    cmp>= r2,r1,r2     # n >= (r2=1)
+    jz r2,out          # r2 == 0 jump to end
+    mov r0,r0,r3       # next cell
+    call printChar,r0  # print ch
+    sub r1,r1,r2       # n--;
+out:
     ret
-proc gbinc9
-	mov r2,1
-    mov r3,r0
-    call gbget,r3
-    jz r1,rcinc_add
-    sub r3,r3,r1
-    jmp rcinc_end
-    rcinc_add:
-    add r3,r3,r1
-    rcinc_end:
-    call rcblk,r0
-    st r3,r0
-    mov r0,r3
-    ret
-proc malloc9
-	mov r1,0
-    mov r2,8
-    mov r3,r2
-    call mem,r3
-    add r0,r0,r2
-    call mem,r0
-    st r2,r0
-    add r0,r0,r2
-    st r0,r3
-    mov r0,r3       
-    ret
-proc dealloc9
-	mov r1,0
-    ld r3,r0
-    mov r5,r3
-    call gbget,r3
-    call rel,r0
-    cmp= r6,r4,r1
-    jz r6,dealloc_out 
-    call rel,r3
-    dealloc_out:
-    mov r0,r5
-    ret
-proc printInt11
-	call iput,[n]
-    ret
-proc exit13
+proc exit11
 	jmp _exit:
     ret
-proc sumList15
-	mov r2,12
-	mov r2,r1
-	mov r3,10
+proc main
+	mov r2,5
+	call createArray5,r2
+	mov r0,r2
+	call arrayLength5,r0
+    call iput,r0
 	mov r6,1
 	mov r4,0
 L1:
-	cmp<= r5,r4,r3
+	cmp<= r5,r4,r0
 	jz r5,L2
-	mov r7,5
-	ld r4,r4
-	add r8,r4,r7
-	mov r8,r1
+	mov r7,1
+	mov r8,8
+	add r4,r4,r7
+	mul r8,r8,r4
+	add r8,r8,r0
+	call getInt7,r10
+	mov r8,r10
 	add r4,r4,r6
 	jmp L1
 L2:
-	mov r9,0
-	ld r1,r1
-	cmp= r10,r1,r9
-	jz r10,L3
-	mov r11,1
-L3:
-	mov r12,0
 	mov r13,1
-	mov r14,8
-	add r12,r12,r13
-	mul r14,r14,r12
-	add r14,r14,r0
-	mov r0,r1
-proc main
-	call createArray5,r0
-	st r0,r0
-	call sumList15,r0
-	mov r5,1
-	mov r3,0
-L5:
-	cmp<= r4,r3,r0
-	jz r4,L6
-	mov r6,2
-	ld r3,r3
-	cmp= r7,r3,r6
-	jz r7,L7
-	mov r8,1
-	ld r3,r3
-	add r9,r3,r8
-	mov r9,r3
-L7:
-	call printInt11,r3
-	add r3,r3,r5
-	jmp L5
-L6:
-	mov r11,0
-	mov r0,r11
+	mov r16,8
+	mov r14,r0
+	ld r14,r14
+	mov r15,r0
+L3:
+	cmp>= r12,r14,r13
+	jz r12,L4
+	sub r14,r14,r13
+	add r15,r15,r16
+	ld r11,r15
+	call printInt9,r11
+	jmp L3
+L4:
+	mov r18,0
+	mov r0,r18
+	jmp L0
+L0:
+	ret
