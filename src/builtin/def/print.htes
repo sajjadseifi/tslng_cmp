@@ -1,15 +1,18 @@
+--decalerations 
+Nil prints(Int char);
+Nil printsln(Int char);
+
+--builtin mid level code
 
 -- printing 'n' argument
 Nil printInt(Int n):
-    call iput,r0
+    call iputi,r0
     ret
 end
 
 -- print char 
-Nil printChar(Int char):
-    mov r1,r0
-    ld r1,r1
-    call iputch,r1
+Nil printc(Int char):
+    call iputc,r0
     ret
 end
 -- print chars of array 

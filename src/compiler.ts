@@ -26,7 +26,6 @@ import { ErrorCorrection } from './error-correction'
 import { IErrorCorrection } from './types/error-correction'
 import { IR } from './ir/IR'
 import { TSIR } from './ir/tes-IR'
-import { Linter } from 'eslint'
 import { ILinkerIR, LinkerIR } from './linker'
 export interface ICompiler {
   run(): void
@@ -269,7 +268,9 @@ export class Compiler implements ICompiler, SharedCompier {
   }
   //
   async post_compile() {
-    const pout = this.congigure.config.out
+    const pout = Object.assign(this.congigure.config.out,{
+      dir:_defalut.app.path.dir
+    })
     const lnkr :ILinkerIR = new LinkerIR(this.tpath,pout,this.gm);
 
     await lnkr.build();

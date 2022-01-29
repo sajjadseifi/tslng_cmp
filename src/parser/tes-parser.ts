@@ -18,6 +18,7 @@ import { IModule } from '../graph-module'
 import { Compiler } from '../compiler'
 import { TSIR } from '../ir/tes-IR'
 import { IFocuse } from 'src/types/focus'
+import { ret } from 'src/backend/opt/dead-code-elim'
 
 export interface ConceptualValues<T,A>
 {
@@ -27,8 +28,9 @@ export interface ConceptualValues<T,A>
 export interface ExprCV{
   val:any
   pt?:boolean//pointer
-  adr?:boolean//address
+  ref?:boolean//address
   mem?:boolean//memory store or laod
+  const?:boolean
 }
 
 export const cv=<T,A>(type:T,things:A):ConceptualValues<T,A>=>({type,things})
@@ -401,7 +403,8 @@ export class TesParser extends SubParser implements IParser, IParserRD {
         this.ir.jz(rcmp,this.ir.slabel(end));
       }   
       //start body
-      nested_labs.push(end);
+      nested_labs.push(begin)
+      nested_labs.push(end)
       this.parser.ec.body_begin(scop, keywords.FOREACH)
       nested_labs.pop();
       //itrable reg
@@ -536,7 +539,13 @@ export class TesParser extends SubParser implements IParser, IParserRD {
       tokChecker.is_num(flw) ||
       this.parser.in_follow('!', '+', '-', '(')
     ) {
-      return this.conditionl_expr()
+      const _cv =  this.conditionl_expr()
+      if(this.is_prs && _cv.things){
+        const r = this.ir.reg
+        this.ir.movr(r,_cv.things.val)
+        _cv.things!.val = r
+      }
+      return _cv
     }
     return cv(sym.EMPTY,null)
   }
@@ -599,13 +608,31 @@ export class TesParser extends SubParser implements IParser, IParserRD {
   }
   //return stored register to memory allocate
   store_mem_or_reg(...rs:(ExprCV|null)[]):number[]{
-    let r;
-    return rs.filter(e=>e && e.mem == false).map((e)=>{
-      r= e!.val
-      this.ir.st(r,r)
-      return r
+    return rs.filter(e=>e && e.mem && !e.ref).map((e)=>{
+      //st r
+      this.ir.st(e!.val,e!.val)
+      e!.mem = false
+      e!.ref = false
+      return e!.val
     })
   }
+  conv_new_cv_reg(regs:(ExprCV|null)[]):(ExprCV|null)[]{
+    return regs.map(r=>{
+        if(r) {
+          const nr = this.ir.reg
+          this.ir.movr(nr,r.val)
+          r.val = nr
+        }  
+        return r
+    }) 
+  }
+  ld_is_mem(r:ExprCV|null):void{
+    if(r && r.mem){
+      this.ir.wlbl(-1)
+      this.ir.ld(r.val,r.val)
+      r.mem = false
+    }
+  }  
   conditionl_expr(): ConceptualValues<EpxrType,ExprCV | null>
   {
     const {type,things} = this.assign_expr()
@@ -684,12 +711,23 @@ export class TesParser extends SubParser implements IParser, IParserRD {
           this.parser.logger.semantic_err('illegal assignment!')
         }
   
-        const rr = exp.things!
+        let rr = exp.things!
         //meme == false mean calculate r2,r3  set to r1 
-        // if(rr.mem)
-        //   this.ir.st(rl?.val,rr?.val) 
-        //   else 
-          this.ir.movr(rl?.val,rr?.val) 
+        rl = rl!
+        if((rl.mem && rr.mem) ||(!rl.mem && !rr.mem))         
+          this.ir.movr(rl.val,rr.val) 
+        else {
+          if(rr.mem){
+            const r = this.ir.reg
+            this.ir.wlbl(0)
+            this.ir.ld(r,rr.val) 
+            rr = { val : r }
+          }
+          if(rl.mem)
+            this.ir.st(rr.val,rl.val) 
+          else 
+            this.ir.movr(rl.val,rr.val) 
+        }  
         rl = rr
       }
     }
@@ -869,6 +907,10 @@ export class TesParser extends SubParser implements IParser, IParserRD {
 
     return exp
   }
+  pointers_exor():ConceptualValues<EpxrType,ExprCV | null>{
+
+    return cv(0,null)
+  }
   index_arr_expr(symnode: ISymbol): ConceptualValues<EpxrType,ExprCV | null> {
     //[ expr
     const exp = this.expr()
@@ -915,11 +957,18 @@ export class TesParser extends SubParser implements IParser, IParserRD {
       //return array cell register
       if(rl) {
         rl.val = rfree
+        rl.mem = true
       }
     }
 
-    if(isArr && start_braket)
-      this.parser.focuses.pop();
+    if(isArr){
+      if(start_braket)
+        this.parser.focuses.pop()
+      else{
+        rl!.mem = true
+        rl!.ref = true
+      }
+    }
     
     return cv(start_braket ? sym.INT : typ,rl);
   }
@@ -936,14 +985,15 @@ export class TesParser extends SubParser implements IParser, IParserRD {
         if(this.module.is_pre) iden.used()
         if(this.is_prs && iden.get_reg == -1){
           iden.set_reg(this.ir.reg)
-          iden.un_used();
+          // iden.un_used();
         }
       }
       //error not defind variable and suggest word this place
       else if (this.is_prs) {
         this.parser.logger.not_defind(val)
       }
-      let reg = iden?.get_reg;
+      let reg = iden?.get_reg
+      
       if (this.parser.in_follow('(',"[")){
         if (iden) this.parser.focuses.call(iden)
         //if expr not founded in symbol table
@@ -952,22 +1002,30 @@ export class TesParser extends SubParser implements IParser, IParserRD {
         if (this.parser.in_follow('(')) {
           const f = this.parser.focuses.focus!;
           const args = this.parser.ec.expr_iden_is_func(f.sym!, exist)
+          //load is mem if not refrecne
           //out of function expresion
           if(this.is_prs && f.is_call){            
             const fname = f.sym!.key as string
+            let argr = null
             
-            reg = args.length ? args[0].val : this.ir.reg
-            //store in memory arg if not refrneces
-            const argr = this.store_mem_or_reg(...args)
-            this.ir.call(fname + iden.linker_code,...args.map(r=>r.val));
+            //convert regs for eliminated conflict
+            argr = this.conv_new_cv_reg(args).filter(r=>!!r).map(r=>r!.val)
+            
+            if(argr.length == 0) argr.push(reg)
+            
+            this.ir.call(fname + iden.linker_code,...argr);
             //free parameters if stored for call function
-            this.ir.free_all(...argr);
+            // this.ir.free_all(...argr);
+            reg = argr[0]
 
           }
           this.parser.focuses.pop()
         }
       }
-      return cv(iden ? iden.type! : sym.NIL,{ val : reg, mem : true })
+      return cv(iden ? iden.type! : sym.NIL,{ 
+        val : reg,
+        mem : !!(iden?.type === sym.ARRAY) 
+      })
     } //
     if (tokChecker.is_num(tok)) {
       this.parser.next()
@@ -1082,8 +1140,9 @@ export class TesParser extends SubParser implements IParser, IParserRD {
         const fname = snodefcs.sym?.key! as string
         this.parser.logger.type_mismatch_arg_func(pos, fname, btyp, ctyp)
       }
-      if(args_out) 
+      if(args_out){
         args_out.push(exp.things!);
+      }
     }
 
     if (this.parser.in_follow(',')) {

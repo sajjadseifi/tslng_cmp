@@ -1,0 +1,11 @@
+imp "./def/print.htes"
+pub function prints(Array str):
+    foreach(c of str):
+        printc(c);
+    end
+end
+
+pub function printsln(Array str):
+    prints(str);    
+    printc(NEWLINE);
+end

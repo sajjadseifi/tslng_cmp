@@ -26,6 +26,7 @@ export interface IPathTes {
   path_str_not_ext(_path: IPath, full?: boolean): string
   path_in_base(): string
   nested_files(dir: string, full?: boolean): string[]
+  full_path(...parths:string[]):string
 }
 export class Path implements IPath {
   dir: string
@@ -52,6 +53,7 @@ export class Path implements IPath {
 export class PathTes implements IPathTes {
   base_route:string[]
   constructor(...base_route: string[]) {
+    console.log(base_route)
     this.base_route = base_route;
     this.init()
   }

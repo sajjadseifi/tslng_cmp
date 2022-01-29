@@ -15,8 +15,10 @@ export class LinkerIR {
     }
 
     async build(){
-        const faddr = this.tpath.path_to_str(this.out_path);
-        this.foutfd = await create_file_or_clear(faddr)
+        const locaddr = this.tpath.path_to_str(this.out_path,false)
+        const glbaddr = this.tpath.full_path(locaddr)
+        console.log(glbaddr)
+        this.foutfd = await create_file_or_clear(glbaddr)
         
         this.grap_modules.traversal(SearchMode.POST_ORDER,this.appending)   
     }

@@ -1,5 +1,4 @@
 --This is a sample code in the TSLANG language 
- 
 
 pub function sum (Array a, Int b, Int c) returns Int: 
  val Int s; 

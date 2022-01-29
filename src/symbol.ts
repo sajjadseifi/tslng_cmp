@@ -20,7 +20,7 @@ export class Sym implements ISymbol {
   private reg;
   linker_code: number
   is_load: boolean
-  __used__?:boolean
+  __used__:boolean
   constructor(
     public key?: string | Scop,
     public type?: SymbolType,
@@ -33,6 +33,8 @@ export class Sym implements ISymbol {
     this.reg = -1;
     this.linker_code = -1;
     this.is_load = false
+    this.__used__ = false
+    
   }
   loaded(): void {
     this.is_load = true
@@ -60,9 +62,7 @@ export class Sym implements ISymbol {
     this.position = pos
   }
   used(): void {
-    if(!this.__used__)
-      this.__used__ = true
-    
+    this.__used__ = true
     this._used_sym_number++
   }
   un_used(): void {

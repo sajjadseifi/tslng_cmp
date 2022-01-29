@@ -1,13 +1,11 @@
 
-proc printInt9
-	call iput,r0
+proc printInt11
+	call iputi,r0
     ret
-proc printChar9
-	mov r1,r0
-    ld r1,r1
-    call iputch,r1
+proc printc11
+	call iputc,r0
     ret
-proc printString9
+proc printString11
 	mov r2,1
     mov r3,8
     ld r1,r0           # size of str

@@ -1,14 +1,28 @@
 function main() returns Int:
     val Array A;
-    A = createArray(5);
-    
-    foreach(i of arrayLength(A)):
+    val Int n;
+    --printf("size:\s")
+    printc(115);printc(105);printc(122);
+    printc(101);printc(32);printc(58);
+    printc(32);
+    n = getInt();
+    --new line
+    A = createArray(n);
+    --printf("init:")
+    printc(105);printc(110);printc(105);
+    printc(116);printc(32);printc(58);
+    printc(10);
+    foreach(i of arrayLength(A)-1):
+        printc(32);printc(65);printc(91);
+        printInt(i);printc(93);printc(58);
         A[i] = getInt();
     end
-
+    --printf("number:")
+    printc(110);printc(117);printc(109);
+    printc(98);printc(101);printc(114);
+    printc(32);printc(58);printc(32);
     foreach(a of A):
         printInt(a);
     end
-
 	return 0;
 end
