@@ -269,9 +269,7 @@ export class ErrorCorrection implements IErrorCorrection {
   /* Body Begin or not with token ':'*/
   body_begin(scop: number, keyword: string): void {
     const tsprs = new TesParser(this.compiler)
-    if (!this.parser.in_follow(':')) {
-      this.parser.logger.keyword_block_body(keyword, true)
-    } 
-    tsprs.new_scop_stmt(scop, keyword)
+    const signle = !this.parser.in_follow(':')
+    tsprs.new_scop_stmt(scop, keyword,signle)
   }
 }

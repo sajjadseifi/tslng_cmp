@@ -200,12 +200,17 @@ export class TesParser extends SubParser implements IParser, IParserRD {
       //clear func_arg to
       this.parser.func_arg.clear()
   }
-  body(scop: number = 0, skop_key?: string): boolean {
+  body(scop: number = 0, skop_key?: string,signle:boolean=false): boolean {
     //goto sub scop
     this.goto_scop(skop_key || scop)
-    while(this.stmt(scop, skop_key)) {
-      //empty
-    }
+    if(signle){
+      this.stmt(scop, skop_key)
+    }else{
+      while(this.stmt(scop, skop_key)) {
+        //empty
+      }
+    } 
+    
     this.out_scop()
     return false
   }
@@ -295,24 +300,19 @@ export class TesParser extends SubParser implements IParser, IParserRD {
     
     if(this.is_prs && end) this.ir.wlbl(end); 
   }
-  new_scop_stmt(scop: number, scop_key?: string) {
+  new_scop_stmt(scop: number, scop_key?: string,signle:boolean=false) {
     //skiped ':' token
-    if (this.parser.in_follow(':')) this.parser.next()
+    if (!signle && this.parser.in_follow(':')) this.parser.next()
     //parsing body statment
-    this.body(scop + 1, scop_key)
+    this.body(scop + 1, scop_key,signle)
     //rm 'end'
-    if (this.parser.in_follow(keywords.END)) {
+    if (!signle && this.parser.in_follow(keywords.END)) {
       this.parser.next()
-      //declared varaible or function but not used
-      if (this.module.is_parse){
-        const varsym = this.parser.crntstbl.symbols.filter(s=>!s.is_func);
-        this.parser.suggest.declared_and_not_used(varsym)
-      }
     }
-    //error nested
-    else {
-      const msg = scop_key ? scop_key : `'neseted blcok level ${scop}'`
-      this.parser.logger.keyword_block_body(msg, false)
+    //declared varaible or function but not used
+    if (this.module.is_parse){
+      const varsym = this.parser.crntstbl.symbols.filter(s=>!s.is_func);
+      this.parser.suggest.declared_and_not_used(varsym)
     }
   }
   while_stmt(scop: number) {
@@ -1007,7 +1007,6 @@ export class TesParser extends SubParser implements IParser, IParserRD {
           if(this.is_prs && f.is_call){            
             const fname = f.sym!.key as string
             let argr = null
-            
             //convert regs for eliminated conflict
             argr = this.conv_new_cv_reg(args).filter(r=>!!r).map(r=>r!.val)
             
