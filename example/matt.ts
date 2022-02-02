@@ -1,0 +1,63 @@
+
+proc fib17
+	mov r2,2
+	cmp< r3,r0,r2
+	mov r4,r3
+	jz r4,L1
+	mov r5,0
+	mov r6,r5
+	mov r7,1
+	mov r8,8
+	add r6,r6,r7
+	mul r8,r8,r6
+	add r8,r8,r1
+	mov r9,1
+	st r9,r8
+	mov r10,r9
+	mov r11,1
+	mov r12,r11
+	mov r13,1
+	mov r14,8
+	add r12,r12,r13
+	mul r14,r14,r12
+	add r14,r14,r1
+	mov r15,1
+	st r15,r14
+	mov r16,r15
+	mov r17,1
+	mov r18,r17
+	mov r0,r18
+	jmp L0
+	jmp L2
+L1:
+	mov r21,1
+	sub r22,r0,r21
+	mov r23,r22
+	mov r24,r1
+	mov r25,r23
+	mov r26,r24
+	call fib17,r25,r26
+	mov r27,2
+	sub r28,r0,r27
+	mov r29,r28
+	mov r30,r1
+	mov r31,r29
+	mov r32,r30
+	call fib17,r31,r32
+	add r33,r25,r31
+	mov r19,r33
+	mov r34,r33
+	mov r35,r0
+	mov r36,1
+	mov r37,8
+	add r35,r35,r36
+	mul r37,r37,r35
+	add r37,r37,r1
+	st r19,r37
+	mov r38,r19
+	mov r39,r19
+	mov r0,r39
+	jmp L0
+L2:
+L0:
+	ret

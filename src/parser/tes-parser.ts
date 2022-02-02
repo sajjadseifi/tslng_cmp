@@ -518,18 +518,14 @@ export class TesParser extends SubParser implements IParser, IParserRD {
 
       if (name) this.parser.next()
     }
-
-    //
-    if(this.is_prs)
-    {
+    if(this.is_prs){
       const sym = this.parser.crntstbl.get(name!)
-      if (!sym) {
+      if (sym) 
         this.parser.logger.is_decleared(name!)
-      }
+      else 
+        this.parser.crntstbl.put(name!, type, false)
     }
-    else if (this.module.is_pre){
-      this.parser.crntstbl.put(name!, type, false)
-    }
+
     return true
   }
   expr(): ConceptualValues<EpxrType,ExprCV | null> {
@@ -685,13 +681,13 @@ export class TesParser extends SubParser implements IParser, IParserRD {
       const rl = lexp.things;
       const rr = rexp.things;
 
-      this.load_mem_or_reg(rl);
-      this.load_mem_or_reg(rr);
-
+      
       this.ir.jz(things?.val,this.ir.slabel(els))
+      this.load_mem_or_reg(rl);
       this.ir.mov(reg,rl?.val)
-      this.ir.wlbl(els)
       this.ir.jmp(this.ir.slabel(end))
+      this.ir.wlbl(els)
+      this.load_mem_or_reg(rr);
       this.ir.mov(reg,rr?.val)
       this.ir.wlbl(end)
     }
@@ -743,8 +739,8 @@ export class TesParser extends SubParser implements IParser, IParserRD {
         out = this.ir.label;
         r = this.ir.zero_reg;
         this.load_mem_or_reg(rl)
-        this.ir.jnz(rl?.val,this.ir.slabel(out));
         this.ir.movr(r,rl?.val);
+        this.ir.jnz(rl?.val,this.ir.slabel(out));
     }
 
     while (this.parser.in_follow('||')) {
@@ -759,8 +755,8 @@ export class TesParser extends SubParser implements IParser, IParserRD {
       if(this.is_prs && out){
         rl = exp.things;
         this.load_mem_or_reg(rl)
-        this.ir.jnz(rl?.val,this.ir.slabel(out));
         this.ir.movr(r,rl?.val);
+        this.ir.jnz(rl?.val,this.ir.slabel(out));
       }
     }
 
@@ -987,6 +983,7 @@ export class TesParser extends SubParser implements IParser, IParserRD {
           iden.set_reg(this.ir.reg)
           // iden.un_used();
         }
+        // if(this.is_prs) console.log("iden.key : ",iden.key)
       }
       //error not defind variable and suggest word this place
       else if (this.is_prs) {

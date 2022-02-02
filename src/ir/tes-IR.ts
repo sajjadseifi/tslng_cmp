@@ -147,7 +147,7 @@ export class TSIR
 
     call = (name: string, ...regs: number[]) => this.wlinetab(`call ${name},${this.seq_regs(...regs)}`);
     
-    ret = () => this.wlinetab('ret');
+    ret = () => this.wlinetab('ret\n');
     
     //builtin 
     iget = (r1: number) => this.call("iget",r1);

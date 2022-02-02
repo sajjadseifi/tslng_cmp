@@ -1,13 +1,26 @@
-function main() returns Int:
-    foreach(i of 10) 
-        if(i % 2 == 0)
-            printInt(i)
-    printc(10)
-    
-    foreach(i of 10) 
-        if(i % 2 == 1):
-            printInt(i)
-            printc(10)
-        end
-	return 0
+imp "./matt.tes"
+function printArray(Array A) returns Nil:
+    val Int n;
+    n = arrayLength(A)
+    printc(91)
+    foreach(a of A):
+        printInt(a)
+        n = n - 1
+        1 ? 0 : printc(44)    
+        --if(n < 1) break
+    end
+    printc(93)
+    return 0
 end
+function main() returns Int:
+    val Int n;
+    printc(102);printc(105);printc(98);printc(58)
+    n = getInt();
+
+    val Array finArr;
+    finArr = createArray(n); 
+    n = fib(n, finArr);
+    printArray(finArr);
+    return 0;
+end
+

@@ -1,0 +1,13 @@
+pub function fib(Int n, Array fibArr) returns Int:
+    if(n < 2):
+        fibArr[0] = 1;
+        fibArr[1] = 1;
+        return 1; 
+    end
+    else:
+        val Int fibn;
+        fibn = fib(n-1, fibArr) + fib(n-2, fibArr);
+        fibArr[n] = fibn;
+        return fibn;
+    end
+end
