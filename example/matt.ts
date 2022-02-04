@@ -27,6 +27,7 @@ proc fib17
 	mov r17,1
 	mov r18,r17
 	mov r0,r18
+	call rel,r1
 	jmp L0
 	jmp L2
 L1:
@@ -57,6 +58,7 @@ L1:
 	mov r38,r19
 	mov r39,r19
 	mov r0,r39
+	call rel,r1
 	jmp L0
 L2:
 L0:

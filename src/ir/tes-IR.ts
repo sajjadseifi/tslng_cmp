@@ -1,3 +1,4 @@
+import { Nullable } from "src/types";
 import { line, tabline } from "../utils/stringfy";
 import { BIT, BYTE, FO_BLOCK_MEM, MAX_FILE_OPEN, MAX_MEM_CALL_STK, ZERO } from "./alloc";
 import { IR } from "./IR";
@@ -61,6 +62,12 @@ export class TSIR
     implements TSCacl,TSJump,TSBuiltin,TSFunc,
                TSOthrs,TSCaclcmpplcate,TSAlloc
 {
+    freg:Nullable<number> = null;
+
+    get fake_reg(){
+        this.freg = this.freg ?  this.freg : this.reg
+        return this.freg;
+    }
 
     reg_num(num:number):number{
         const reg = this.reg;

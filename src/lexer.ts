@@ -265,6 +265,8 @@ export class Lexer implements ILexer, ILexerAtomata {
         return TokenType.TOKEN_KEYWORD_WHILE    
       case keywords.BREAK:
         return TokenType.TOKEN_KEYWORD_BREAK
+      case keywords.CONTINUE:
+          return TokenType.TOKEN_KEYWORD_CONTINUE
       default:
         return NULL
     }
@@ -341,7 +343,6 @@ export class Lexer implements ILexer, ILexerAtomata {
       c2 == '<=' ||
       c2 == '>=' ||
       c2 == '++' ||
-      c2 == '--' ||
       c2 == '**' ||
       c2 == '||' ||
       c2 == '&&'

@@ -6,11 +6,9 @@ function printArray(Array A) returns Nil:
     foreach(a of A):
         printInt(a)
         n = n - 1
-        1 ? 0 : printc(44)    
-        --if(n < 1) break
+        n  > 0 ? printc(44) : 0    
     end
     printc(93)
-    return 0
 end
 function main() returns Int:
     val Int n;
@@ -18,9 +16,14 @@ function main() returns Int:
     n = getInt();
 
     val Array finArr;
-    finArr = createArray(n); 
+    finArr = createArray(n);
+    a = 10;
+    coco(a);
     n = fib(n, finArr);
     printArray(finArr);
-    return 0;
+    if(!n):
+        return -++-1;
+    end
+    return -1;
 end
 

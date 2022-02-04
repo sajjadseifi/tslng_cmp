@@ -12,13 +12,14 @@ import {
   is_type,
   is_val
 } from '../utils/token-cheker'
-import { is_empty, same_type, type_str } from '../utils/type-checking'
+import { is_array, is_empty, same_type, type_str } from '../utils/type-checking'
 import { IParser, IParserRD, StatusIDEN, SubParser } from './types'
 import { IModule } from '../graph-module'
 import { Compiler } from '../compiler'
 import { TSIR } from '../ir/tes-IR'
 import { IFocuse } from 'src/types/focus'
 import { ret } from 'src/backend/opt/dead-code-elim'
+import { OF } from 'src/constants/keyword'
 
 export interface ConceptualValues<T,A>
 {
@@ -261,12 +262,11 @@ export class TesParser extends SubParser implements IParser, IParserRD {
     //if next token is not semicolon solved error during
     if(this.is_prs) {
       //move to r0 for return value
-
       if(t.things){
         let r = t.things.val
-        this.ir.movr(0,r);
+        this.ir.movr(0,r)
+        this.free_reg_ret(this.parser.crntstbl)
       }
-      // this.free_reg_ret(this.parser.crntstbl);
       this.ir.jmp(this.ir.slabel(out_fc))
     }
   }
@@ -590,8 +590,13 @@ export class TesParser extends SubParser implements IParser, IParserRD {
     }
   }
   free_reg_ret(tbl:ISymbolTable):void{
-    this.free_reg_table(tbl); 
-    this.free_reg_ret(tbl.parrent!);    
+    if(!tbl) return
+    
+    for(const sbl of tbl.symbols)
+      if(is_array(sbl.type as EpxrType))
+        this.ir.rel(sbl.get_reg)   
+     
+    this.free_reg_ret(tbl.parrent!)   
   }
   //return loaded register in memory
   load_mem_or_reg(...rs:(ExprCV|null)[]):number[]{
@@ -628,29 +633,55 @@ export class TesParser extends SubParser implements IParser, IParserRD {
       this.ir.ld(r.val,r.val)
       r.mem = false
     }
-  }  
+  }
+    /*
+      re ? rl : rl
+      jz re , esle
+      r = rl
+      jmp end
+    else:
+      r = rr
+    end:
+  */   
   conditionl_expr(): ConceptualValues<EpxrType,ExprCV | null>
   {
     const {type,things} = this.assign_expr()
     if(!this.parser.in_follow("?"))
       return cv(type,things)
-    
-    this.parser.next();
+      let reg=-1,els=-1,end=-1;
+    if(this.is_prs)
+    {
+      reg = this.ir.reg
+      els = this.ir.label
+      end = this.ir.label
+      this.ir.jz(things?.val,this.ir.slabel(els))
+    }
 
+    this.parser.next();
     let err: boolean = false
     const lexp = this.expr();
+    const rl = lexp.things;
     if(is_empty(lexp.type)){
       err=true
       this.parser.logger.syntax_err("expersion prev : can not be empty");
     }
-      
+    if(this.is_prs)
+    {
+      this.load_mem_or_reg(rl);
+      this.ir.mov(reg,rl?.val)
+      this.ir.jmp(this.ir.slabel(end))
+    }
+
     if(this.parser.in_follow(":"))
       this.parser.next();
     else
       this.parser.logger.syntax_err("expected : after experison in conditional experssion");
     
-    const rexp = this.expr();
+    if(this.is_prs)
+      this.ir.wlbl(els)
 
+    const rexp = this.expr()
+    const rr = rexp.things
     if(is_empty(rexp.type))
     {
       err=true
@@ -658,40 +689,16 @@ export class TesParser extends SubParser implements IParser, IParserRD {
     }
     if(!err && lexp.type != rexp.type)
     {
-      if(this.module.is_parse)
+      if(this.is_prs)
         this.parser.logger.mismatch_type_conditional(lexp.type,rexp.type);
       err = true;
     }
-    
-    //re ? rl : rl
-    /*
-        jz re , esle
-        r = rl
-        jmp end
-      else:
-        r = rr
-      end:
-    */ 
-   let reg
     if(this.is_prs)
     {
-      reg = this.ir.reg
-      const els = this.ir.label;
-      const end = this.ir.label;
-      const rl = lexp.things;
-      const rr = rexp.things;
-
-      
-      this.ir.jz(things?.val,this.ir.slabel(els))
-      this.load_mem_or_reg(rl);
-      this.ir.mov(reg,rl?.val)
-      this.ir.jmp(this.ir.slabel(end))
-      this.ir.wlbl(els)
       this.load_mem_or_reg(rr);
       this.ir.mov(reg,rr?.val)
       this.ir.wlbl(end)
     }
-
     return cv(err ? sym.NIL : lexp.type,{val:reg})
   }
   assign_expr(): ConceptualValues<EpxrType,ExprCV | null> {
@@ -890,16 +897,35 @@ export class TesParser extends SubParser implements IParser, IParserRD {
     
     return cv(typ,rl)
   }
-  unary_oprator(): boolean {
+  unary_oprator(list:any[]=[]): boolean {
     if (this.parser.in_follow('+', '-', '!')) {
-      this.parser.next()
+      const t =this.parser.next()
+      list.push(t.val)
       return true
     }
     return false
   }
   unary_expr(): ConceptualValues<EpxrType,ExprCV | null>  {
-    while (this.unary_oprator());
+    const list: any[] = []
+    while (this.unary_oprator(list));
     const exp =  this.postfix_expr()
+    let last = list.length
+    while(this.is_prs && last-- > 0){
+      if(list[last] == "!"){
+        const z = this.ir.reg
+        this.ir.mov(z,0)
+        this.ld_is_mem(exp.things)
+        //0 -> 1 & !0 -> 0
+        this.ir.eq(exp.things?.val,exp.things?.val,z)
+      }
+      else if(list[last] == "-"){
+        const neg = this.ir.reg
+        this.ir.mov(neg,-1)
+        this.ld_is_mem(exp.things)
+        this.ir.mul(exp.things?.val,exp.things?.val,neg)
+      }
+      exp.type = sym.INT
+    }
 
     return exp
   }
@@ -978,19 +1004,25 @@ export class TesParser extends SubParser implements IParser, IParserRD {
       const exist = !!iden
       //if use the identifier symbol checked th is_used propery
       if (iden){
-        if(this.module.is_pre) iden.used()
+        if(this.module.is_pre && iden.is_func) iden.used()
+        else if(this.is_prs) iden.used()
+
         if(this.is_prs && iden.get_reg == -1){
           iden.set_reg(this.ir.reg)
-          // iden.un_used();
         }
-        // if(this.is_prs) console.log("iden.key : ",iden.key)
       }
       //error not defind variable and suggest word this place
       else if (this.is_prs) {
         this.parser.logger.not_defind(val)
       }
-      let reg = iden?.get_reg
-      
+      let reg = null 
+      if(this.is_prs)
+      {
+        if(iden)
+          reg = iden.get_reg 
+        else 
+          reg = this.ir.fake_reg
+      }
       if (this.parser.in_follow('(',"[")){
         if (iden) this.parser.focuses.call(iden)
         //if expr not founded in symbol table
@@ -1054,7 +1086,7 @@ export class TesParser extends SubParser implements IParser, IParserRD {
       this.parser.logger.log_with_line('primary expression is not ok!')
    
     this.parser.next()
-    return cv(sym.NIL,null)
+    return cv(sym.NIL,{ val : this.ir.fake_reg })
   }
   get_arg_regs(func:ISymbol):number[]{
     const regs :number[] = [];
@@ -1125,7 +1157,7 @@ export class TesParser extends SubParser implements IParser, IParserRD {
     const empty = typeCheking.is_empty(exp.type)
     const snodefcs = this.parser.fcs
     if (empty) {
-      this.parser.logger.arg_empty_call(pos)
+      // this.parser.logger.arg_empty_call(pos)
     } else if (this.arg_checker_clist(snodefcs,pos)) {
       //get argument at position of symbols
       const arg_at_pos = snodefcs.sym!.subTables!.symbols[pos]

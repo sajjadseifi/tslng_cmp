@@ -141,7 +141,7 @@ export class Logger implements ILogger {
   {
     const t1c = type_qute(type_str(tpye1)) 
     const t2c = type_qute(type_str(tpye2)) 
-    this.semantic_err(`mismatch type conditional expr,'${t1c}' not equal to '${t2c}' `);
+    this.semantic_err(`mismatch type conditional expr,${t1c} not equal to ${t2c}.`);
 
   }
   type_mismatch_arg_func(

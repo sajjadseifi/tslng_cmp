@@ -247,7 +247,7 @@ export class ErrorCorrection implements IErrorCorrection {
     //
     if (!isparse || !exist || c === prmc) return
     //
-    this.parser.logger.expected_arg(val, prmc, c)
+    this.parser.logger.expected_arg(val,  c,prmc)
   }
   expr_iden_is_func(iden: ISymbol, exist: boolean): ExprCV[] {
     const regs : ExprCV[] = [];
