@@ -591,10 +591,14 @@ export class TesParser extends SubParser implements IParser, IParserRD {
   }
   free_reg_ret(tbl:ISymbolTable):void{
     if(!tbl) return
+    const node = tbl.parrent?.symbols[tbl.pindex]
+    let c = node?.is_func ? node.param_counts : 0 ;
     
-    for(const sbl of tbl.symbols)
-      if(is_array(sbl.type as EpxrType))
-        this.ir.rel(sbl.get_reg)   
+    for(c; c < tbl.symbols.length ; c++)
+    {
+      if(is_array(tbl.symbols[c].type as EpxrType))
+        this.ir.rel(tbl.symbols[c].get_reg)   
+    }
      
     this.free_reg_ret(tbl.parrent!)   
   }

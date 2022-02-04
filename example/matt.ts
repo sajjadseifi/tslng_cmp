@@ -3,7 +3,7 @@ proc fib17
 	mov r2,2
 	cmp< r3,r0,r2
 	mov r4,r3
-	jz r4,L1
+	jz r4,L3
 	mov r5,0
 	mov r6,r5
 	mov r7,1
@@ -27,10 +27,9 @@ proc fib17
 	mov r17,1
 	mov r18,r17
 	mov r0,r18
-	call rel,r1
-	jmp L0
 	jmp L2
-L1:
+	jmp L4
+L3:
 	mov r21,1
 	sub r22,r0,r21
 	mov r23,r22
@@ -58,8 +57,7 @@ L1:
 	mov r38,r19
 	mov r39,r19
 	mov r0,r39
-	call rel,r1
-	jmp L0
+	jmp L2
+L4:
 L2:
-L0:
 	ret

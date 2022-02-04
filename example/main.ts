@@ -16,9 +16,9 @@ proc printArray3
 	mov r15,r11
 	ld r15,r15
 	mov r16,r11
-L4:
+L6:
 	cmp>= r13,r15,r14
-	jz r13,L5
+	jz r13,L7
 	sub r15,r15,r14
 	add r16,r16,r17
 	ld r12,r16
@@ -32,28 +32,28 @@ L4:
 	mov r24,r23
 	mov r25,0
 	cmp> r26,r1,r25
-	jz r26,L6
+	jz r26,L8
 	mov r28,44
 	mov r29,r28
 	mov r30,r29
 	call printc11,r30
 	mov r31,r30
 	mov r27,31
-	jmp L7
-L6:
+	jmp L9
+L8:
 	mov r32,0
 	mov r33,r32
 	mov r27,33
-L7:
+L9:
 	mov r34,r27
-	jmp L4
-L5:
+	jmp L6
+L7:
 	mov r35,93
 	mov r36,r35
 	mov r37,r36
 	call printc11,r37
 	mov r38,r37
-L3:
+L5:
 	ret
 
 proc main
@@ -101,25 +101,37 @@ proc main
 	mov r36,r35
 	call printArray3,r36
 	mov r37,r36
-	mov r38,0
-	cmp= r16,r16,r38
-	mov r39,r16
-	jz r39,L9
-	mov r40,-1
-	mul r24,r24,r40
-	mov r41,1
-	sub r42,r24,r41
+	mov r39,10
+	mov r38,r39
+	mov r40,r39
+L11:
+	mov r41,0
+	cmp> r42,r38,r41
 	mov r43,r42
-	mov r0,r43
-	call rel,r19
-	jmp L8
-L9:
+	jz r43,L12
 	mov r44,1
-	mov r45,-1
-	mul r44,r44,r45
-	mov r46,r44
-	mov r0,r46
+	sub r45,r38,r44
+	mov r38,r45
+	mov r46,r45
+	call getInt9,r17
+	mov r47,50
+	cmp= r48,r17,r47
+	mov r49,r48
+	jz r49,L13
+	mov r50,1
+	mov r51,r50
+	mov r0,r51
 	call rel,r19
-	jmp L8
-L8:
+	jmp L10
+L13:
+	jmp L11
+L12:
+	mov r52,1
+	mov r53,-1
+	mul r52,r52,r53
+	mov r54,r52
+	mov r0,r54
+	call rel,r19
+	jmp L10
+L10:
 	ret

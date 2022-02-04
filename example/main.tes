@@ -13,16 +13,20 @@ end
 function main() returns Int:
     val Int n;
     printc(102);printc(105);printc(98);printc(58)
-    n = getInt();
+    n = getInt()
 
-    val Array finArr;
-    finArr = createArray(n);
-    a = 10;
-    coco(a);
-    n = fib(n, finArr);
-    printArray(finArr);
-    if(!n):
-        return -++-1;
+    val Array finArr
+    finArr = createArray(n)
+    a = 10
+    coco(a)
+    n = fib(n, finArr)
+    printArray(finArr)
+    val Int i;
+    i = 10;
+    while(i > 0):
+        i = i - 1;
+        if(getInt() == 50)
+            return 1;
     end
     return -1;
 end
